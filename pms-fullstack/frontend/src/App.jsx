@@ -9,8 +9,10 @@ import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
 import Reports from './pages/Reports';
 import TeamMembers from './pages/TeamMembers';
+import ChatPage from './pages/ChatPage';
+import CalendarPage from './pages/CalendarPage';
 
-const PrivateRoute = ({ children }) => {
+const PrivateRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -24,7 +26,13 @@ const PrivateRoute = ({ children }) => {
     );
   }
 
-  return user ? <DashboardLayout>{children}</DashboardLayout> : <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" />;
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return <DashboardLayout>{children}</DashboardLayout>;
 };
 
 function App() {
@@ -74,8 +82,26 @@ function App() {
           <Route
             path="/team"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={['ADMIN', 'MANAGER']}>
                 <TeamMembers />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/chat"
+            element={
+              <PrivateRoute>
+                <ChatPage />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/calendar"
+            element={
+              <PrivateRoute>
+                <CalendarPage />
               </PrivateRoute>
             }
           />
@@ -83,7 +109,7 @@ function App() {
           <Route
             path="/reports"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={['ADMIN', 'MANAGER']}>
                 <Reports />
               </PrivateRoute>
             }

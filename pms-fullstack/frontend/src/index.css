@@ -60,3 +60,58 @@
 .glass {
   @apply bg-white/80 backdrop-blur-md border border-white/20;
 }
+
+/* FullCalendar Custom Premium Styling */
+.fc {
+  --fc-button-bg-color: transparent;
+  --fc-button-border-color: #e5e7eb;
+  --fc-button-hover-bg-color: #f3f4f6;
+  --fc-button-active-bg-color: #f3f4f6;
+  --fc-border-color: #f3f4f6;
+  --fc-today-bg-color: rgba(99, 102, 241, 0.05);
+  --fc-event-bg-color: #6366f1;
+  --fc-event-border-color: #4f46e5;
+  font-family: inherit;
+}
+
+.fc-theme-standard td, .fc-theme-standard th {
+  border-color: #f3f4f6 !important;
+}
+
+.fc .fc-col-header-cell {
+  background: transparent;
+  padding: 12px 0;
+}
+
+.fc .fc-col-header-cell-cushion {
+  @apply text-xs font-bold text-gray-400 uppercase tracking-widest;
+}
+
+.fc .fc-daygrid-day-number {
+  @apply text-sm font-semibold text-gray-600 p-2;
+}
+
+.fc .fc-daygrid-event {
+  @apply rounded-lg px-2 py-1 text-xs font-medium border-none shadow-sm transition-all;
+}
+
+.fc .fc-daygrid-event:hover {
+  @apply opacity-90 scale-[1.02];
+}
+
+.fc .fc-timegrid-slot {
+  height: 3em !important;
+  border-bottom: 0 !important;
+}
+
+.fc .fc-timegrid-now-indicator-line {
+  border-color: #ef4444;
+}
+
+.fc-list-event {
+  @apply cursor-pointer hover:bg-gray-50;
+}
+
+.calendar-container::-webkit-scrollbar {
+  display: none;
+}

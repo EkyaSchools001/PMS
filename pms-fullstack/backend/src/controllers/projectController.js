@@ -1,4 +1,5 @@
 const prisma = require('../utils/prisma');
+const { ROLES } = require('../utils/policies');
 
 // Create a new project
 const createProject = async (req, res) => {
@@ -15,7 +16,27 @@ const createProject = async (req, res) => {
                 budget: budget ? parseFloat(budget) : 0,
                 managerId,
                 customerId,
+                members: {
+                    connect: [{ id: managerId }] // Manager is always a member
+                }
             },
+        });
+
+        // Create Project Group Chat
+        const chatParticipants = [{ userId: managerId }];
+        if (customerId) {
+            chatParticipants.push({ userId: customerId });
+        }
+
+        await prisma.chat.create({
+            data: {
+                type: 'PROJECT_GROUP',
+                name: `${name} Group`,
+                projectId: project.id,
+                participants: {
+                    create: chatParticipants
+                }
+            }
         });
 
         res.status(201).json(project);
@@ -30,18 +51,18 @@ const getProjects = async (req, res) => {
         const { role, id } = req.user;
         let where = {};
 
-        if (role === 'MANAGER') {
+        if (role === ROLES.MANAGER) {
             where = { managerId: id };
-        } else if (role === 'EMPLOYEE') {
-            // Employees see projects they have tasks in
+        } else if (role === ROLES.EMPLOYEE) {
+            // Employees see projects they are members of
             where = {
-                tasks: {
+                members: {
                     some: {
-                        assigneeId: id,
+                        id: id,
                     },
                 },
             };
-        } else if (role === 'CUSTOMER') {
+        } else if (role === ROLES.CUSTOMER) {
             where = { customerId: id };
         }
         // Admin sees all (empty where)
@@ -70,6 +91,8 @@ const getProjectById = async (req, res) => {
             include: {
                 tasks: true,
                 manager: { select: { fullName: true } },
+                members: { select: { id: true, fullName: true, email: true, role: true } },
+                chat: { select: { id: true } }
             },
         });
 
@@ -97,7 +120,18 @@ const updateProject = async (req, res) => {
         const project = await prisma.project.update({
             where: { id },
             data,
+            include: { chat: true }
         });
+
+        // If customer was updated, add them to the chat if it exists
+        if (data.customerId && project.chat) {
+            await prisma.chatParticipant.create({
+                data: {
+                    chatId: project.chat.id,
+                    userId: data.customerId
+                }
+            }).catch(() => { }); // Ignore if already in chat
+        }
 
         res.json(project);
     } catch (error) {
@@ -116,10 +150,76 @@ const deleteProject = async (req, res) => {
     }
 };
 
+// Add member to project
+const addMember = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.body;
+
+        const project = await prisma.project.update({
+            where: { id },
+            data: {
+                members: {
+                    connect: { id: userId }
+                }
+            },
+            include: { chat: true }
+        });
+
+        // Add to project chat if exists
+        if (project.chat) {
+            await prisma.chatParticipant.create({
+                data: {
+                    chatId: project.chat.id,
+                    userId
+                }
+            }).catch(() => { }); // Ignore if already in chat
+        }
+
+        res.json(project);
+    } catch (error) {
+        res.status(500).json({ message: 'Error adding member', error: error.message });
+    }
+};
+
+// Remove member from project
+const removeMember = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.body;
+
+        const project = await prisma.project.update({
+            where: { id },
+            data: {
+                members: {
+                    disconnect: { id: userId }
+                }
+            },
+            include: { chat: true }
+        });
+
+        // Remove from project chat
+        if (project.chat) {
+            await prisma.chatParticipant.deleteMany({
+                where: {
+                    chatId: project.chat.id,
+                    userId
+                }
+            });
+        }
+
+        res.json(project);
+    } catch (error) {
+        res.status(500).json({ message: 'Error removing member', error: error.message });
+    }
+};
+
 module.exports = {
     createProject,
     getProjects,
     getProjectById,
     updateProject,
     deleteProject,
+    addMember,
+    removeMember
 };

@@ -19,9 +19,10 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const { data } = await api.post('/auth/login', { email, password });
+            const { data } = await api.post('auth/login', { email, password });
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('userId', data.user.id); // Store userId for chat
             setUser(data.user);
             return { success: true };
         } catch (error) {
@@ -31,9 +32,10 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (userData) => {
         try {
-            const { data } = await api.post('/auth/register', userData);
+            const { data } = await api.post('auth/register', userData);
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('userId', data.user.id); // Store userId for chat
             setUser(data.user);
             return { success: true };
         } catch (error) {
@@ -44,6 +46,7 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('userId');
         setUser(null);
     };
 

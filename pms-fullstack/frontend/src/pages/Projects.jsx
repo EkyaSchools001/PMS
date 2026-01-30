@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import { Plus, Calendar, DollarSign, Search, Filter, MoreVertical, TrendingUp, Users, Clock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Plus, Calendar, DollarSign, Search, Filter, MoreVertical, TrendingUp, Users, Clock, ArrowRight } from 'lucide-react';
 
 const Projects = () => {
+    const { user } = useAuth();
     const [projects, setProjects] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -21,7 +23,7 @@ const Projects = () => {
 
     const fetchProjects = async () => {
         try {
-            const { data } = await api.get('/projects');
+            const { data } = await api.get('projects');
             setProjects(data);
             setLoading(false);
         } catch (error) {
@@ -33,7 +35,7 @@ const Projects = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/projects', formData);
+            await api.post('projects', formData);
             setShowModal(false);
             fetchProjects();
             setFormData({ name: '', description: '', budget: '', startDate: '', endDate: '' });
@@ -68,13 +70,15 @@ const Projects = () => {
                     <h1 className="text-4xl font-bold text-gray-900 tracking-tight mb-2">Projects</h1>
                     <p className="text-gray-500 text-lg">Manage your portfolio and track progress.</p>
                 </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="btn btn-primary shadow-xl shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all"
-                >
-                    <Plus size={20} />
-                    New Project
-                </button>
+                {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="btn btn-primary shadow-xl shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all"
+                    >
+                        <Plus size={20} />
+                        New Project
+                    </button>
+                )}
             </div>
 
             {/* Stats Overview */}
@@ -161,18 +165,20 @@ const Projects = () => {
                 ))}
 
                 {/* Add New Project Card */}
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="group bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 hover:border-primary/50 hover:bg-blue-50/30 transition-all duration-300 flex flex-col items-center justify-center min-h-[300px] gap-4"
-                >
-                    <div className="w-16 h-16 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-primary group-hover:scale-110 transition-all duration-300">
-                        <Plus size={32} />
-                    </div>
-                    <div className="text-center">
-                        <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">Create New Project</h3>
-                        <p className="text-sm text-gray-500">Start a new initiative</p>
-                    </div>
-                </button>
+                {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="group bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 hover:border-primary/50 hover:bg-blue-50/30 transition-all duration-300 flex flex-col items-center justify-center min-h-[300px] gap-4"
+                    >
+                        <div className="w-16 h-16 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-primary group-hover:scale-110 transition-all duration-300">
+                            <Plus size={32} />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">Create New Project</h3>
+                            <p className="text-sm text-gray-500">Start a new initiative</p>
+                        </div>
+                    </button>
+                )}
             </div>
 
             {/* Create Project Modal */}
@@ -256,23 +262,5 @@ const Projects = () => {
         </div>
     );
 };
-
-const ArrowRight = ({ size, className }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={className}
-    >
-        <path d="M5 12h14" />
-        <path d="m12 5 7 7-7 7" />
-    </svg>
-);
 
 export default Projects;

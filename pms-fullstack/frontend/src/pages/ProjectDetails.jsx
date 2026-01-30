@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { Plus, Calendar, User, CheckCircle, Clock, MoreHorizontal, AlertCircle, ArrowUpRight } from 'lucide-react';
 
 const ProjectDetails = () => {
+    const { user } = useAuth();
     const { id } = useParams();
+    const navigate = useNavigate();
     const [project, setProject] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showTaskModal, setShowTaskModal] = useState(false);
@@ -13,8 +16,10 @@ const ProjectDetails = () => {
         description: '',
         priority: 'MEDIUM',
         dueDate: '',
-        assigneeId: ''
+        assigneeIds: []
     });
+    const [showChat, setShowChat] = useState(false);
+    const [members, setMembers] = useState([]);
 
     useEffect(() => {
         fetchProjectDetails();
@@ -22,8 +27,9 @@ const ProjectDetails = () => {
 
     const fetchProjectDetails = async () => {
         try {
-            const { data } = await api.get(`/projects/${id}`);
+            const { data } = await api.get(`projects/${id}`);
             setProject(data);
+            setMembers(data.members || []);
             setLoading(false);
         } catch (error) {
             console.error('Failed to fetch project details', error);
@@ -34,10 +40,10 @@ const ProjectDetails = () => {
     const handleCreateTask = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/tasks', { ...newTask, projectId: id });
+            await api.post('tasks', { ...newTask, projectId: id });
             setShowTaskModal(false);
             fetchProjectDetails();
-            setNewTask({ title: '', description: '', priority: 'MEDIUM', dueDate: '', assigneeId: '' });
+            setNewTask({ title: '', description: '', priority: 'MEDIUM', dueDate: '', assigneeIds: [] });
         } catch (error) {
             alert('Failed to create task');
         }
@@ -45,7 +51,7 @@ const ProjectDetails = () => {
 
     const handleStatusChange = async (taskId, newStatus) => {
         try {
-            await api.patch(`/tasks/${taskId}/status`, { status: newStatus });
+            await api.patch(`tasks/${taskId}/status`, { status: newStatus });
             fetchProjectDetails();
         } catch (error) {
             alert('Failed to update task status');
@@ -98,42 +104,72 @@ const ProjectDetails = () => {
                             </div>
                             <p className="text-gray-500 max-w-2xl text-lg leading-relaxed">{project.description}</p>
                         </div>
-                        <button
-                            onClick={() => setShowTaskModal(true)}
-                            className="btn btn-primary shrink-0 shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all"
-                        >
-                            <Plus size={20} />
-                            Add New Task
-                        </button>
                     </div>
+                    <div className="flex gap-2">
+                        {project.chat && (
+                            <button
+                                onClick={() => navigate(`/chat?chatId=${project.chat.id}`)}
+                                className="btn bg-green-500 text-white hover:bg-green-600 shrink-0 shadow-lg"
+                            >
+                                Open Group Chat
+                            </button>
+                        )}
+                        {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+                            <button
+                                onClick={() => setShowTaskModal(true)}
+                                className="btn btn-primary shrink-0 shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all"
+                            >
+                                <Plus size={20} />
+                                Add New Task
+                            </button>
+                        )}
+                    </div>
+                </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex items-center gap-4">
-                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary">
-                                <User size={20} />
+                {/* Team Members Section */}
+                <div className="mb-8">
+                    <h3 className="text-lg font-bold mb-4">Team Members</h3>
+                    <div className="flex flex-wrap gap-4">
+                        {members.map(member => (
+                            <div key={member.id} className="flex items-center gap-2 bg-white p-2 rounded-lg border shadow-sm">
+                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                                    {member.fullName.charAt(0)}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold">{member.fullName}</p>
+                                    <p className="text-xs text-gray-500">{member.role}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Project Manager</p>
-                                <p className="font-semibold text-gray-900">{project.manager.fullName}</p>
-                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex items-center gap-4">
+                        <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary">
+                            <User size={20} />
                         </div>
-                        <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex items-center gap-4">
-                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-purple-500">
-                                <Calendar size={20} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Due Date</p>
-                                <p className="font-semibold text-gray-900">{new Date(project.endDate).toLocaleDateString()}</p>
-                            </div>
+                        <div>
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Project Manager</p>
+                            <p className="font-semibold text-gray-900">{project.manager.fullName}</p>
                         </div>
-                        <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex items-center gap-4">
-                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-emerald-500">
-                                <CheckCircle size={20} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Total Budget</p>
-                                <p className="font-semibold text-gray-900">${project.budget.toLocaleString()}</p>
-                            </div>
+                    </div>
+                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex items-center gap-4">
+                        <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-purple-500">
+                            <Calendar size={20} />
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Due Date</p>
+                            <p className="font-semibold text-gray-900">{new Date(project.endDate).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex items-center gap-4">
+                        <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-emerald-500">
+                            <CheckCircle size={20} />
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Total Budget</p>
+                            <p className="font-semibold text-gray-900">${project.budget.toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
@@ -146,9 +182,9 @@ const ProjectDetails = () => {
                         <div className="flex items-center justify-between mb-4 px-2">
                             <h3 className="font-bold text-gray-700 flex items-center gap-2.5">
                                 <span className={`w-2.5 h-2.5 rounded-full ring-2 ring-white shadow-sm ${status === 'TODO' ? 'bg-gray-400' :
-                                        status === 'IN_PROGRESS' ? 'bg-blue-500' :
-                                            status === 'IN_REVIEW' ? 'bg-amber-500' :
-                                                'bg-emerald-500'
+                                    status === 'IN_PROGRESS' ? 'bg-blue-500' :
+                                        status === 'IN_REVIEW' ? 'bg-amber-500' :
+                                            'bg-emerald-500'
                                     }`}></span>
                                 {status.replace('_', ' ')}
                             </h3>
@@ -211,86 +247,107 @@ const ProjectDetails = () => {
             </div>
 
             {/* Create Task Modal */}
-            {showTaskModal && (
-                <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
-                    <div className="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-300 border border-gray-100">
-                        <div className="flex justify-between items-center mb-8">
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-900">Add Task</h2>
-                                <p className="text-sm text-gray-500">Create a new action item</p>
+            {
+                showTaskModal && (
+                    <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
+                        <div className="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-300 border border-gray-100">
+                            <div className="flex justify-between items-center mb-8">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900">Add Task</h2>
+                                    <p className="text-sm text-gray-500">Create a new action item</p>
+                                </div>
+                                <button onClick={() => setShowTaskModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600">
+                                    <span className="text-2xl leading-none">&times;</span>
+                                </button>
                             </div>
-                            <button onClick={() => setShowTaskModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600">
-                                <span className="text-2xl leading-none">&times;</span>
-                            </button>
-                        </div>
 
-                        <form onSubmit={handleCreateTask} className="space-y-6">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Task Title</label>
-                                    <input
-                                        required
-                                        className="input-field bg-gray-50 focus:bg-white transition-colors"
-                                        placeholder="What needs to be done?"
-                                        value={newTask.title}
-                                        onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Description</label>
-                                    <textarea
-                                        className="input-field min-h-[100px] bg-gray-50 focus:bg-white transition-colors resize-none"
-                                        placeholder="Add context and details..."
-                                        value={newTask.description}
-                                        onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-6">
+                            <form onSubmit={handleCreateTask} className="space-y-6">
+                                <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Priority</label>
-                                        <div className="relative">
-                                            <AlertCircle className="absolute left-3 top-3 text-gray-400" size={16} />
-                                            <select
-                                                className="input-field pl-10 appearance-none bg-gray-50 focus:bg-white"
-                                                value={newTask.priority}
-                                                onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                                            >
-                                                <option value="LOW">Low</option>
-                                                <option value="MEDIUM">Medium</option>
-                                                <option value="HIGH">High</option>
-                                                <option value="CRITICAL">Critical</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Due Date</label>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Task Title</label>
                                         <input
-                                            type="date"
-                                            className="input-field bg-gray-50 focus:bg-white"
-                                            value={newTask.dueDate}
-                                            onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                                            required
+                                            className="input-field bg-gray-50 focus:bg-white transition-colors"
+                                            placeholder="What needs to be done?"
+                                            value={newTask.title}
+                                            onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                                         />
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Description</label>
+                                        <textarea
+                                            className="input-field min-h-[100px] bg-gray-50 focus:bg-white transition-colors resize-none"
+                                            placeholder="Add context and details..."
+                                            value={newTask.description}
+                                            onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Priority</label>
+                                            <div className="relative">
+                                                <AlertCircle className="absolute left-3 top-3 text-gray-400" size={16} />
+                                                <select
+                                                    className="input-field pl-10 appearance-none bg-gray-50 focus:bg-white"
+                                                    value={newTask.priority}
+                                                    onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                                                >
+                                                    <option value="LOW">Low</option>
+                                                    <option value="MEDIUM">Medium</option>
+                                                    <option value="HIGH">High</option>
+                                                    <option value="CRITICAL">Critical</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Due Date</label>
+                                            <input
+                                                type="date"
+                                                className="input-field bg-gray-50 focus:bg-white"
+                                                value={newTask.dueDate}
+                                                onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="mt-4">
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Assignees</label>
+                                        <select
+                                            multiple
+                                            className="input-field bg-gray-50 focus:bg-white h-24"
+                                            value={newTask.assigneeIds}
+                                            onChange={(e) => {
+                                                const selected = Array.from(e.target.selectedOptions, option => option.value);
+                                                setNewTask({ ...newTask, assigneeIds: selected });
+                                            }}
+                                        >
+                                            {members.map(member => (
+                                                <option key={member.id} value={member.id}>
+                                                    {member.fullName}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="flex gap-4 pt-6 border-t border-gray-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowTaskModal(false)}
-                                    className="flex-1 btn btn-secondary py-3"
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" className="flex-1 btn btn-primary py-3 shadow-lg shadow-primary/25 hover:shadow-primary/40">
-                                    Create Task
-                                </button>
-                            </div>
-                        </form>
+                                <div className="flex gap-4 pt-6 border-t border-gray-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTaskModal(false)}
+                                        className="flex-1 btn btn-secondary py-3"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="flex-1 btn btn-primary py-3 shadow-lg shadow-primary/25 hover:shadow-primary/40">
+                                        Create Task
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

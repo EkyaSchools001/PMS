@@ -1,9 +1,10 @@
 const prisma = require('../utils/prisma');
+const { ROLES } = require('../utils/policies');
 
 // Create Task
 const createTask = async (req, res) => {
     try {
-        const { title, description, priority, dueDate, projectId, assigneeId } = req.body;
+        const { title, description, priority, dueDate, projectId, assigneeIds } = req.body;
 
         const task = await prisma.task.create({
             data: {
@@ -12,8 +13,13 @@ const createTask = async (req, res) => {
                 priority: priority || 'MEDIUM',
                 dueDate: dueDate ? new Date(dueDate) : null,
                 projectId,
-                assigneeId,
+                assignees: assigneeIds ? {
+                    connect: assigneeIds.map(id => ({ id }))
+                } : undefined,
             },
+            include: {
+                assignees: { select: { id: true, fullName: true, email: true } }
+            }
         });
 
         res.status(201).json(task);
@@ -26,10 +32,26 @@ const createTask = async (req, res) => {
 const getProjectTasks = async (req, res) => {
     try {
         const { projectId } = req.params;
+        const { role, id: userId } = req.user;
+
+        let whereClause = { projectId };
+
+        // Visibility Rules
+        if (role === ROLES.EMPLOYEE) {
+            // Employee sees only tasks assigned to them
+            whereClause.assignees = {
+                some: { id: userId }
+            };
+        } else if (role === ROLES.CUSTOMER) {
+            // Customer sees NO internal tasks
+            return res.json([]);
+        }
+        // ADMIN and MANAGER see all tasks
+
         const tasks = await prisma.task.findMany({
-            where: { projectId },
+            where: whereClause,
             include: {
-                assignee: { select: { fullName: true, email: true } },
+                assignees: { select: { id: true, fullName: true, email: true } },
             },
             orderBy: { createdAt: 'desc' },
         });

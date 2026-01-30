@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, FolderKanban, CheckSquare, LogOut, Settings, PieChart, Users } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, CheckSquare, LogOut, Settings, PieChart, Users, MessageSquare, Calendar } from 'lucide-react';
 import clsx from 'clsx';
 
 const Sidebar = () => {
@@ -8,13 +8,20 @@ const Sidebar = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const navItems = [
-        { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-        { label: 'Projects', path: '/projects', icon: FolderKanban },
-        { label: 'Team Members', path: '/team', icon: Users },
-        { label: 'My Tasks', path: '/tasks', icon: CheckSquare },
-        { label: 'Reports', path: '/reports', icon: PieChart },
+    const allNavItems = [
+        { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE', 'CUSTOMER'] },
+        { label: 'Projects', path: '/projects', icon: FolderKanban, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE', 'CUSTOMER'] },
+        { label: 'Team Members', path: '/team', icon: Users, roles: ['ADMIN', 'MANAGER'] },
+        { label: 'Chat', path: '/chat', icon: MessageSquare, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE', 'CUSTOMER'] },
+        { label: 'Calendar', path: '/calendar', icon: Calendar, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE', 'CUSTOMER'] },
+        { label: 'My Tasks', path: '/tasks', icon: CheckSquare, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE', 'CUSTOMER'] },
+        { label: 'Reports', path: '/reports', icon: PieChart, roles: ['ADMIN', 'MANAGER'] },
     ];
+
+    // Filter nav items based on user role
+    const navItems = allNavItems.filter(item =>
+        !item.roles || item.roles.includes(user?.role)
+    );
 
     const handleLogout = () => {
         logout();
@@ -46,7 +53,6 @@ const Sidebar = () => {
                             <p className="font-semibold text-sm truncate text-gray-900">{user?.fullName}</p>
                             <p className="text-xs text-gray-500 capitalize">{user?.role?.toLowerCase()}</p>
                         </div>
-                        <Settings size={16} className="text-gray-400 group-hover:text-primary transition-colors" />
                     </div>
                 </div>
             </div>
