@@ -62,9 +62,18 @@ async function main() {
             });
         });
 
+        const { checkTicketReminders } = require('./src/controllers/ticketController');
+
         server.listen(PORT, () => {
             console.log(`🚀 Server running on port ${PORT}`);
+
+            // Start ticket reminder checker (runs every 15 minutes)
+            setInterval(() => {
+                console.log('⏰ Running ticket reminder check...');
+                checkTicketReminders();
+            }, 15 * 60 * 1000);
         });
+
     } catch (error) {
         console.error('❌ Database connection failed:', error);
         process.exit(1);

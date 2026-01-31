@@ -9,6 +9,12 @@ const chatRoutes = require('./routes/chatRoutes');
 const meetingRoutes = require('./routes/meetingRoutes');
 const roomRoutes = require('./routes/roomRoutes');
 const calendarRoutes = require('./routes/calendarRoutes');
+const ticketRoutes = require('./routes/ticketRoutes');
+const timeLogRoutes = require('./routes/timeLogRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+
+
+
 
 dotenv.config();
 
@@ -17,8 +23,13 @@ const app = express();
 const path = require('path');
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || '*',
+    credentials: true,
+};
+app.use(cors(corsOptions));
 app.use(express.json());
+
 
 // Serve uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -32,6 +43,12 @@ app.use('/api/v1/chats', chatRoutes);
 app.use('/api/v1/meetings', meetingRoutes);
 app.use('/api/v1/rooms', roomRoutes);
 app.use('/api/v1/calendar', calendarRoutes);
+app.use('/api/v1/tickets', ticketRoutes);
+app.use('/api/v1/time-logs', timeLogRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
+
+
+
 
 app.get('/', (req, res) => {
     res.send('Project Management System API is running...');

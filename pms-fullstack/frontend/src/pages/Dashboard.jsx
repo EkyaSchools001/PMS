@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { TrendingUp, Users, FolderKanban, CheckCircle2, ArrowUpRight, Clock, Calendar, Video, MapPin, Plus } from 'lucide-react';
+import { TrendingUp, Users, FolderKanban, CheckCircle2, ArrowUpRight, Clock, Calendar, Video, MapPin, Plus, AlertCircle } from 'lucide-react';
+
 import api from '../services/api';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import ScheduleMeetingModal from '../components/ScheduleMeetingModal';
+import LogHoursModal from '../components/LogHoursModal';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -17,6 +19,7 @@ const Dashboard = () => {
         { label: 'Hours Logged', value: '...', icon: Clock, color: 'bg-amber-500', change: '+0%', path: '/tasks' },
     ]);
     const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+    const [isLogHoursOpen, setIsLogHoursOpen] = useState(false);
 
     useEffect(() => {
         fetchDashboardData();
@@ -24,20 +27,54 @@ const Dashboard = () => {
 
     const fetchDashboardData = async () => {
         try {
-            const [meetingsRes, projectsRes, usersRes, tasksRes] = await Promise.all([
+            // Using separate try-catch blocks or Promise.allSettled to ensure dashboard loads even if one API fails
+            const results = await Promise.allSettled([
                 api.get('meetings'),
                 api.get('projects'),
                 api.get('users'),
-                api.get('tasks')
+                api.get('tasks'),
+                api.get('time-logs/stats')
             ]);
 
-            setMeetings(meetingsRes.data.filter(m => new Date(m.startTime) >= new Date()).slice(0, 3));
+            const [meetingsRes, projectsRes, usersRes, tasksRes, timeStatsRes] = results.map(r => r.status === 'fulfilled' ? r.value.data : null);
+
+            if (meetingsRes) {
+                setMeetings(meetingsRes.filter(m => new Date(m.startTime) >= new Date()).slice(0, 3));
+            }
 
             setStats([
-                { label: 'Active Projects', value: projectsRes.data.length.toString(), icon: FolderKanban, color: 'bg-blue-500', change: '+12%', path: '/projects' },
-                { label: 'Total Tasks', value: tasksRes.data.length.toString(), icon: CheckCircle2, color: 'bg-emerald-500', change: '+8%', path: '/tasks' },
-                { label: 'Team Members', value: usersRes.data.length.toString(), icon: Users, color: 'bg-purple-500', change: '+3%', path: '/team' },
-                { label: 'Hours Logged', value: '156', icon: Clock, color: 'bg-amber-500', change: '+15%', path: '/tasks' },
+                {
+                    label: 'Active Projects',
+                    value: projectsRes ? projectsRes.length.toString() : '0',
+                    icon: FolderKanban,
+                    color: 'bg-blue-500',
+                    change: '+12%',
+                    path: '/projects'
+                },
+                {
+                    label: 'Total Tasks',
+                    value: tasksRes ? tasksRes.length.toString() : '0',
+                    icon: CheckCircle2,
+                    color: 'bg-emerald-500',
+                    change: '+8%',
+                    path: '/tasks'
+                },
+                {
+                    label: 'Team Members',
+                    value: usersRes ? usersRes.length.toString() : '0',
+                    icon: Users,
+                    color: 'bg-purple-500',
+                    change: '+3%',
+                    path: '/team'
+                },
+                {
+                    label: 'Hours Logged',
+                    value: timeStatsRes ? timeStatsRes.totalHours.toString() : '0',
+                    icon: Clock,
+                    color: 'bg-amber-500',
+                    change: '+15%',
+                    path: '/tasks'
+                },
             ]);
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
@@ -164,34 +201,27 @@ const Dashboard = () => {
                         {isAdminOrManager && (
                             <button
                                 onClick={() => navigate('/projects')}
-                                className="w-full btn btn-primary justify-start text-left py-4 px-6 hover:translate-x-1"
+                                className="w-full btn btn-primary justify-start text-left py-4 px-6 hover:translate-x-1 uppercase text-[10px] tracking-widest font-black"
                             >
                                 <Plus size={20} />
                                 Create New Project
                             </button>
                         )}
-                        <button onClick={() => setIsMeetingModalOpen(true)} className="w-full btn btn-secondary justify-start text-left py-4 px-6 hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all">
+                        <button onClick={() => setIsMeetingModalOpen(true)} className="w-full btn btn-secondary justify-start text-left py-4 px-6 hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all uppercase text-[10px] tracking-widest font-black">
                             <Calendar size={20} />
                             Schedule Meeting
                         </button>
                         <button
-                            onClick={() => navigate('/tasks')}
-                            className="w-full btn btn-secondary justify-start text-left py-4 px-6"
-                        >
-                            <CheckCircle2 size={20} />
-                            Add Personal Task
-                        </button>
-                        <button
-                            onClick={() => navigate('/tasks')}
-                            className="w-full btn btn-secondary justify-start text-left py-4 px-6"
+                            onClick={() => setIsLogHoursOpen(true)}
+                            className="w-full btn btn-secondary justify-start text-left py-4 px-6 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all uppercase text-[10px] tracking-widest font-black"
                         >
                             <Clock size={20} />
-                            Log My Hours
+                            Log My Performance
                         </button>
                         {isAdminOrManager && (
                             <button
                                 onClick={() => navigate('/team')}
-                                className="w-full btn btn-secondary justify-start text-left py-4 px-6"
+                                className="w-full btn btn-secondary justify-start text-left py-4 px-6 uppercase text-[10px] tracking-widest font-black"
                             >
                                 <Users size={20} />
                                 Manage Team
@@ -201,15 +231,18 @@ const Dashboard = () => {
                 </div>
             </div>
 
+
             {/* Activity Feed */}
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Activity</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-6 font-primary flex items-center gap-2">
+                    <TrendingUp className="text-emerald-500" size={24} /> Recent Squad Activity
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
-                        { action: 'New task assigned', project: 'Website Redesign', time: '2 hours ago', color: 'bg-blue-500' },
-                        { action: 'Project milestone completed', project: 'Mobile App', time: '5 hours ago', color: 'bg-emerald-500' },
-                        { action: 'Team member joined', project: 'Marketing Campaign', time: '1 day ago', color: 'bg-purple-500' },
-                        { action: 'Meeting invitation received', project: 'Client Kickoff', time: 'Just now', color: 'bg-indigo-500' },
+                        { action: 'Task logic finalized', project: 'PMS Core Extension', time: '2 hours ago', color: 'bg-blue-500' },
+                        { action: 'New time log entry', project: 'Mobile App Support', time: '5 hours ago', color: 'bg-amber-500' },
+                        { action: 'Team member joined', project: 'Reporting Dashboard', time: '1 day ago', color: 'bg-purple-500' },
+                        { action: 'Priority ticket resolved', project: 'Client Interface', time: 'Just now', color: 'bg-emerald-500' },
                     ].map((activity, index) => (
                         <div key={index} className="flex items-start gap-4 p-4 hover:bg-gray-50 rounded-xl transition-colors border border-gray-50">
                             <div className={`${activity.color} w-3 h-3 rounded-full mt-1.5 shrink-0 shadow-lg shadow-current/20`}></div>
@@ -226,6 +259,12 @@ const Dashboard = () => {
             <ScheduleMeetingModal
                 isOpen={isMeetingModalOpen}
                 onClose={() => setIsMeetingModalOpen(false)}
+                onSuccess={fetchDashboardData}
+            />
+
+            <LogHoursModal
+                isOpen={isLogHoursOpen}
+                onClose={() => setIsLogHoursOpen(false)}
                 onSuccess={fetchDashboardData}
             />
         </div>

@@ -17,9 +17,19 @@ router.get('/', async (req, res) => {
                 email: true,
                 fullName: true,
                 role: true,
+                department: true,
+                dateOfBirth: true,
                 profilePicture: true,
+
                 createdAt: true,
+                manager: {
+                    select: {
+                        id: true,
+                        fullName: true
+                    }
+                },
                 managedProjects: {
+
                     select: {
                         id: true,
                         name: true,
@@ -41,8 +51,10 @@ router.get('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { fullName, email, role } = req.body;
+        const { fullName, email, role, department, managerId, dateOfBirth } = req.body;
         const currentUser = req.user;
+
+
 
         // Check if user exists
         const userToUpdate = await prisma.user.findUnique({
@@ -100,6 +112,18 @@ router.put('/:id', async (req, res) => {
 
         if (req.body.profilePicture !== undefined) {
             updateData.profilePicture = req.body.profilePicture;
+        }
+
+        if (department !== undefined) {
+            updateData.department = department;
+        }
+
+        if (managerId !== undefined) {
+            updateData.managerId = managerId || null; // Allow clearing manager
+        }
+
+        if (dateOfBirth !== undefined) {
+            updateData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
         }
 
         // Update user

@@ -3,10 +3,11 @@ const {
     createTask,
     getProjectTasks,
     updateTaskStatus,
+    updateTask,
 } = require('../controllers/taskController');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { authorizeRole, validateProjectAccess, validateTaskAccess } = require('../middlewares/rbacMiddleware');
-const { POLICIES } = require('../utils/policies');
+const { POLICIES, ROLES } = require('../utils/policies');
 
 const router = express.Router();
 
@@ -14,6 +15,10 @@ router.use(authenticate);
 
 // Create Task: Admin, Manager (Must own project)
 router.post('/', authorizeRole(POLICIES.TASKS.CREATE), validateProjectAccess, createTask);
+
+// Update Task: Admin/Manager only
+router.put('/:id', authorizeRole([ROLES.ADMIN, ROLES.MANAGER]), validateTaskAccess, updateTask);
+
 
 // Get Tasks: Project members only
 router.get('/project/:projectId', validateProjectAccess, getProjectTasks);

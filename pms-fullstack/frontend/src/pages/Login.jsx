@@ -18,10 +18,15 @@ const Login = () => {
         const result = await login(email, password);
         setIsLoading(false);
         if (result.success) {
-            navigate('/dashboard');
+            if (email === 'itmanager@ekya.edu.in') {
+                navigate('/manager-dashboard');
+            } else {
+                navigate('/dashboard');
+            }
         } else {
             setError(result.message);
         }
+
     };
 
     return (

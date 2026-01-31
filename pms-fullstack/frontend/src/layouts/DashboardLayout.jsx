@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
-import { Bell, Search, LogOut, User, Mail, Briefcase, Edit2, ChevronDown, X } from 'lucide-react';
+import { Bell, LogOut, User, Mail, Briefcase, Edit2, ChevronDown, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import FloatingChatbot from '../components/FloatingChatbot';
+import NotificationDropdown from '../components/NotificationDropdown';
+
+
 
 const DashboardLayout = ({ children }) => {
     const { user, logout } = useAuth();
@@ -145,34 +149,29 @@ const DashboardLayout = ({ children }) => {
     }, [showProfileDropdown]);
 
     return (
-        <div className="min-h-screen bg-gray-50/50 flex font-sans text-gray-900">
+        <div className="min-h-screen bg-[var(--bg-background)] flex font-sans text-[var(--text-primary)] transition-colors duration-300">
             <Sidebar />
             <main className="flex-1 ml-72 relative">
                 {/* Top Navigation Bar */}
-                <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-4 flex justify-between items-center">
+                <header className="sticky top-0 z-40 bg-[var(--bg-card)]/80 backdrop-blur-md border-b border-[var(--border-color)] px-8 py-4 flex justify-between items-center transition-colors duration-300">
+
                     <div className="flex items-center gap-4 flex-1">
-                        <div className="relative w-full max-w-md hidden md:block">
-                            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search projects, tasks, or team members..."
-                                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
-                            />
-                        </div>
+                        {/* Search removed as requested */}
                     </div>
+
                     <div className="flex items-center gap-4">
-                        <button className="relative p-2 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-xl transition-colors">
-                            <Bell size={20} />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 border-2 border-white rounded-full"></span>
-                        </button>
+                        <NotificationDropdown />
+
+
                         <div className="h-8 w-px bg-gray-200 mx-1"></div>
 
                         {/* User Profile Dropdown */}
                         <div className="relative profile-dropdown-container">
                             <button
                                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                                className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer"
+                                className="flex items-center gap-3 px-3 py-2 bg-[var(--bg-background)] rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-card)] hover:border-primary/30 transition-colors cursor-pointer"
                             >
+
                                 {user?.profilePicture ? (
                                     <img
                                         src={user.profilePicture}
@@ -185,15 +184,17 @@ const DashboardLayout = ({ children }) => {
                                     </div>
                                 )}
                                 <div className="hidden lg:block text-left">
-                                    <p className="text-sm font-semibold text-gray-900">{user?.fullName}</p>
-                                    <p className="text-xs text-gray-500 capitalize">{user?.role?.toLowerCase()}</p>
+                                    <p className="text-sm font-semibold text-[var(--text-primary)]">{user?.fullName}</p>
+                                    <p className="text-xs text-[var(--text-secondary)] capitalize">{user?.role?.toLowerCase()}</p>
                                 </div>
-                                <ChevronDown size={16} className={`text-gray-400 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={16} className={`text-[var(--text-secondary)] transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
                             </button>
+
 
                             {/* Profile Dropdown Card */}
                             {showProfileDropdown && (
-                                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute right-0 mt-2 w-80 bg-[var(--bg-card)] rounded-2xl shadow-2xl border border-[var(--border-color)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+
                                     {/* Header with gradient */}
                                     <div className="bg-gradient-to-r from-primary to-indigo-600 p-6 text-white">
                                         <div className="flex items-center gap-4">
@@ -222,34 +223,34 @@ const DashboardLayout = ({ children }) => {
                                     <div className="p-6 space-y-4">
                                         {/* Email */}
                                         <div className="flex items-start gap-3">
-                                            <div className="p-2 bg-gray-100 rounded-lg">
-                                                <Mail size={18} className="text-gray-600" />
+                                            <div className="p-2 bg-[var(--bg-background)] rounded-lg">
+                                                <Mail size={18} className="text-[var(--text-secondary)]" />
                                             </div>
                                             <div className="flex-1">
-                                                <p className="text-xs text-gray-500 font-medium mb-1">Email Address</p>
-                                                <p className="text-sm text-gray-900 font-medium">{user?.email || 'Not provided'}</p>
+                                                <p className="text-xs text-[var(--text-secondary)] font-medium mb-1">Email Address</p>
+                                                <p className="text-sm text-[var(--text-primary)] font-medium">{user?.email || 'Not provided'}</p>
                                             </div>
                                         </div>
 
                                         {/* Role */}
                                         <div className="flex items-start gap-3">
-                                            <div className="p-2 bg-gray-100 rounded-lg">
-                                                <Briefcase size={18} className="text-gray-600" />
+                                            <div className="p-2 bg-[var(--bg-background)] rounded-lg">
+                                                <Briefcase size={18} className="text-[var(--text-secondary)]" />
                                             </div>
                                             <div className="flex-1">
-                                                <p className="text-xs text-gray-500 font-medium mb-1">Role & Position</p>
-                                                <p className="text-sm text-gray-900 font-medium capitalize">{user?.role?.toLowerCase() || 'Not specified'}</p>
+                                                <p className="text-xs text-[var(--text-secondary)] font-medium mb-1">Role & Position</p>
+                                                <p className="text-sm text-[var(--text-primary)] font-medium capitalize">{user?.role?.toLowerCase() || 'Not specified'}</p>
                                             </div>
                                         </div>
 
                                         {/* User ID */}
                                         <div className="flex items-start gap-3">
-                                            <div className="p-2 bg-gray-100 rounded-lg">
-                                                <User size={18} className="text-gray-600" />
+                                            <div className="p-2 bg-[var(--bg-background)] rounded-lg">
+                                                <User size={18} className="text-[var(--text-secondary)]" />
                                             </div>
                                             <div className="flex-1">
-                                                <p className="text-xs text-gray-500 font-medium mb-1">User ID</p>
-                                                <p className="text-sm text-gray-900 font-mono">{user?.id || 'N/A'}</p>
+                                                <p className="text-xs text-[var(--text-secondary)] font-medium mb-1">User ID</p>
+                                                <p className="text-sm text-[var(--text-primary)] font-mono">{user?.id || 'N/A'}</p>
                                             </div>
                                         </div>
 
@@ -299,7 +300,8 @@ const DashboardLayout = ({ children }) => {
             {/* Edit Profile Modal */}
             {showEditModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-[var(--bg-card)] rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[var(--border-color)]">
+
                         {/* Modal Header */}
                         <div className="bg-gradient-to-r from-primary to-indigo-600 p-6 text-white flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -330,7 +332,7 @@ const DashboardLayout = ({ children }) => {
                             {/* Profile Picture Upload */}
                             <div className="flex justify-center mb-6">
                                 <div className="relative group">
-                                    <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-100 shadow-lg">
+                                    <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-[var(--bg-background)] shadow-lg">
                                         {profilePicturePreview ? (
                                             <img
                                                 src={profilePicturePreview}
@@ -338,7 +340,7 @@ const DashboardLayout = ({ children }) => {
                                                 className="w-full h-full object-cover"
                                             />
                                         ) : (
-                                            <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
+                                            <div className="w-full h-full bg-[var(--bg-background)] flex items-center justify-center text-[var(--text-secondary)]">
                                                 <User size={40} />
                                             </div>
                                         )}
@@ -358,7 +360,7 @@ const DashboardLayout = ({ children }) => {
 
                             {/* Full Name */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2">
                                     Full Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
@@ -366,31 +368,32 @@ const DashboardLayout = ({ children }) => {
                                     name="fullName"
                                     value={editFormData.fullName}
                                     onChange={handleInputChange}
-                                    className="input-field"
+                                    className="input-field bg-[var(--bg-background)]"
                                     placeholder="Enter your full name"
                                     required
+
                                 />
                             </div>
 
                             {/* Email - Read Only */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2">
                                     Email Address
                                 </label>
                                 <input
                                     type="email"
                                     name="email"
                                     value={editFormData.email}
-                                    className="input-field bg-gray-100 cursor-not-allowed text-gray-500"
+                                    className="input-field bg-[var(--bg-background)] cursor-not-allowed text-[var(--text-secondary)] opacity-70"
                                     readOnly
                                     title="Email cannot be changed"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">To change your email, please contact an administrator.</p>
+                                <p className="text-xs text-[var(--text-secondary)] mt-1">To change your email, please contact an administrator.</p>
                             </div>
 
                             {/* Role - Only editable by Admin and Manager */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2">
                                     Role
                                 </label>
                                 {canEditProfile() ? (
@@ -398,20 +401,21 @@ const DashboardLayout = ({ children }) => {
                                         name="role"
                                         value={editFormData.role}
                                         onChange={handleInputChange}
-                                        className="input-field"
+                                        className="input-field bg-[var(--bg-background)]"
                                     >
+
                                         <option value="ADMIN">Admin</option>
                                         <option value="MANAGER">Manager</option>
                                         <option value="EMPLOYEE">Employee</option>
                                         <option value="CUSTOMER">Customer</option>
                                     </select>
                                 ) : (
-                                    <div className="input-field bg-gray-100 cursor-not-allowed capitalize">
+                                    <div className="input-field bg-[var(--bg-background)] cursor-not-allowed capitalize opacity-70">
                                         {editFormData.role?.toLowerCase()}
                                     </div>
                                 )}
                                 {!canEditProfile() && (
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className="text-xs text-[var(--text-secondary)] mt-1">
                                         Only Admins and Managers can change roles
                                     </p>
                                 )}
@@ -449,7 +453,10 @@ const DashboardLayout = ({ children }) => {
                     </div>
                 </div>
             )}
+            {/* Floating Chatbot */}
+            <FloatingChatbot />
         </div>
+
     );
 };
 

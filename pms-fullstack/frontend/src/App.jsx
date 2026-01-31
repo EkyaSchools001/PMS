@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+
 import DashboardLayout from './layouts/DashboardLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -11,6 +13,9 @@ import Reports from './pages/Reports';
 import TeamMembers from './pages/TeamMembers';
 import ChatPage from './pages/ChatPage';
 import CalendarPage from './pages/CalendarPage';
+import ManagerDashboard from './pages/ManagerDashboard';
+
+
 
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -39,6 +44,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -115,10 +121,25 @@ function App() {
             }
           />
 
+
+
+          <Route
+            path="/manager-dashboard"
+            element={
+              <PrivateRoute allowedRoles={['MANAGER']}>
+                <ManagerDashboard />
+              </PrivateRoute>
+            }
+          />
+
+
+
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </Router>
-    </AuthProvider>
+    </AuthProvider >
+
+
   );
 }
 

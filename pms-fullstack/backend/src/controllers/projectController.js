@@ -1,11 +1,17 @@
 const prisma = require('../utils/prisma');
 const { ROLES } = require('../utils/policies');
+const { createNotification } = require('./notificationController');
+
 
 // Create a new project
 const createProject = async (req, res) => {
     try {
-        const { name, description, startDate, endDate, budget, customerId } = req.body;
-        const managerId = req.user.id; // From auth middleware
+        const { name, description, startDate, endDate, budget, customerId, managerId: selectedManagerId, memberIds = [] } = req.body;
+        const creatorId = req.user.id;
+        const managerId = selectedManagerId || creatorId;
+
+        // Combine all unique participants (manager, members, creator)
+        const allMemberIds = Array.from(new Set([managerId, creatorId, ...memberIds]));
 
         const project = await prisma.project.create({
             data: {
@@ -17,16 +23,17 @@ const createProject = async (req, res) => {
                 managerId,
                 customerId,
                 members: {
-                    connect: [{ id: managerId }] // Manager is always a member
+                    connect: allMemberIds.map(id => ({ id }))
                 }
             },
         });
 
         // Create Project Group Chat
-        const chatParticipants = [{ userId: managerId }];
-        if (customerId) {
+        const chatParticipants = allMemberIds.map(id => ({ userId: id }));
+        if (customerId && !allMemberIds.includes(customerId)) {
             chatParticipants.push({ userId: customerId });
         }
+
 
         await prisma.chat.create({
             data: {
@@ -39,11 +46,25 @@ const createProject = async (req, res) => {
             }
         });
 
+        // Trigger notifications for participants
+        allMemberIds.forEach(userId => {
+            if (userId !== creatorId) {
+                createNotification(
+                    userId,
+                    'PROJECT_INVITE',
+                    'Added to New Project',
+                    `You have been added to the project: "${name}"`,
+                    `/projects/${project.id}`
+                );
+            }
+        });
+
         res.status(201).json(project);
     } catch (error) {
         res.status(500).json({ message: 'Error creating project', error: error.message });
     }
 };
+
 
 // Get all projects (Admin sees all, Manager sees theirs, Employee sees assigned)
 const getProjects = async (req, res) => {
@@ -72,9 +93,20 @@ const getProjects = async (req, res) => {
             include: {
                 manager: { select: { fullName: true, email: true } },
                 customer: { select: { fullName: true, email: true } },
+                tasks: {
+                    select: {
+                        id: true,
+                        title: true,
+                        status: true,
+                        startDate: true,
+                        dueDate: true,
+                        priority: true
+                    }
+                },
                 _count: { select: { tasks: true } },
             },
         });
+
 
         res.json(projects);
     } catch (error) {
@@ -89,12 +121,23 @@ const getProjectById = async (req, res) => {
         const project = await prisma.project.findUnique({
             where: { id },
             include: {
-                tasks: true,
+                tasks: {
+                    include: {
+                        assignees: { select: { id: true, fullName: true } }
+                    }
+                },
+                tickets: {
+                    include: {
+                        assignee: { select: { fullName: true } },
+                        reporter: { select: { fullName: true } }
+                    }
+                },
                 manager: { select: { fullName: true } },
                 members: { select: { id: true, fullName: true, email: true, role: true } },
                 chat: { select: { id: true } }
             },
         });
+
 
         if (!project) {
             return res.status(404).json({ message: 'Project not found' });

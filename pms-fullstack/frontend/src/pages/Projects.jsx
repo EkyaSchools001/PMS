@@ -7,6 +7,7 @@ import { Plus, Calendar, DollarSign, Search, Filter, MoreVertical, TrendingUp, U
 const Projects = () => {
     const { user } = useAuth();
     const [projects, setProjects] = useState([]);
+    const [users, setUsers] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [formData, setFormData] = useState({
@@ -14,35 +15,53 @@ const Projects = () => {
         description: '',
         budget: '',
         startDate: '',
-        endDate: ''
+        endDate: '',
+        managerId: user?.id || '',
+        memberIds: []
     });
 
+
     useEffect(() => {
-        fetchProjects();
+        fetchData();
     }, []);
 
-    const fetchProjects = async () => {
+    const fetchData = async () => {
         try {
-            const { data } = await api.get('projects');
-            setProjects(data);
+            setLoading(true);
+            const [projectsRes, usersRes] = await Promise.all([
+                api.get('projects'),
+                api.get('users')
+            ]);
+            setProjects(projectsRes.data);
+            setUsers(usersRes.data);
             setLoading(false);
         } catch (error) {
-            console.error('Failed to fetch projects', error);
+            console.error('Failed to fetch dashboard data', error);
             setLoading(false);
         }
     };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             await api.post('projects', formData);
             setShowModal(false);
-            fetchProjects();
-            setFormData({ name: '', description: '', budget: '', startDate: '', endDate: '' });
+            fetchData();
+            setFormData({
+                name: '',
+                description: '',
+                budget: '',
+                startDate: '',
+                endDate: '',
+                managerId: user?.id || '',
+                memberIds: []
+            });
         } catch (error) {
             alert('Failed to create project');
         }
     };
+
 
     const getStatusStyle = (status) => {
         switch (status) {
@@ -228,17 +247,59 @@ const Projects = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Budget</label>
-                                        <div className="relative">
-                                            <span className="absolute left-4 top-2.5 text-gray-400 font-medium">$</span>
-                                            <input
-                                                type="number"
-                                                className="input-field pl-8 bg-gray-50 focus:bg-white"
-                                                placeholder="0.00"
-                                                value={formData.budget}
-                                                onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                                            />
-                                        </div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">End Date (Goal)</label>
+                                        <input
+                                            type="date"
+                                            required
+                                            className="input-field bg-gray-50 focus:bg-white"
+                                            value={formData.endDate}
+                                            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Budget</label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-2.5 text-gray-400 font-medium">$</span>
+                                        <input
+                                            type="number"
+                                            className="input-field pl-8 bg-gray-50 focus:bg-white"
+                                            placeholder="0.00"
+                                            value={formData.budget}
+                                            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Project Lead (Manager)</label>
+                                        <select
+                                            required
+                                            className="input-field bg-gray-50 focus:bg-white transition-colors"
+                                            value={formData.managerId}
+                                            onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+                                        >
+                                            <option value="">Select Manager</option>
+                                            {users.filter(u => u.role === 'ADMIN' || u.role === 'MANAGER').map(u => (
+                                                <option key={u.id} value={u.id}>{u.fullName} ({u.role})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Squad Members</label>
+                                        <select
+                                            multiple
+                                            className="input-field bg-gray-50 focus:bg-white transition-colors h-32"
+                                            value={formData.memberIds}
+                                            onChange={(e) => setFormData({ ...formData, memberIds: Array.from(e.target.selectedOptions, o => o.value) })}
+                                        >
+                                            {users.map(u => (
+                                                <option key={u.id} value={u.id}>{u.fullName} ({u.role})</option>
+                                            ))}
+                                        </select>
+                                        <p className="text-[10px] text-gray-400 mt-1 ml-1 italic">Hold Ctrl (Cmd) to select multiple</p>
                                     </div>
                                 </div>
                             </div>
@@ -260,6 +321,7 @@ const Projects = () => {
                 </div>
             )}
         </div>
+
     );
 };
 

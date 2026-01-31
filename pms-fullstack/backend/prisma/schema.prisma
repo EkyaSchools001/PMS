@@ -90,9 +90,17 @@ model User {
   passwordHash String
   fullName     String
   role         Role     @default(EMPLOYEE)
+  department   String?  // New: Organization unit
+  dateOfBirth  DateTime? // New: Birthday
   profilePicture String? // URL to profile picture
   createdAt    DateTime @default(now())
+
   updatedAt    DateTime @updatedAt
+
+  // Hierarchical Relations
+  managerId    String?
+  manager      User?     @relation("UserManager", fields: [managerId], references: [id])
+  employees    User[]    @relation("UserManager")
 
   // Relations
   managedProjects  Project[] @relation("ProjectManager")
@@ -115,7 +123,12 @@ model User {
   meetingsOrganized Meeting[]    @relation("MeetingOrganizer")
   meetingInvites    MeetingParticipant[]
   auditLogs         AuditLog[]
+  notifications     Notification[]
+  campusAccess      String?        // Comma-separated campuses
+  ticketComments    TicketComment[] @relation("CommentAuthor")
 }
+
+
 
 // 2. Project Management
 model Project {
@@ -257,6 +270,9 @@ model Ticket {
   description String
   status      TicketStatus @default(OPEN)
   priority    TaskPriority @default(MEDIUM)
+  campus      String?      // New: Campus location
+  category    String?      // New: Ticket category (IT, Facilities, etc.)
+  slaDeadline DateTime?    // New: SLA deadline
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -269,7 +285,23 @@ model Ticket {
 
   assigneeId String?
   assignee   User?   @relation("TicketAssignee", fields: [assigneeId], references: [id])
+
+  lastReminderSentAt DateTime?
+  comments           TicketComment[]
 }
+
+model TicketComment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  
+  authorId  String
+  author    User     @relation("CommentAuthor", fields: [authorId], references: [id])
+}
+
 
 // 8. Chat System
 enum ChatType {
@@ -436,3 +468,29 @@ model AuditLog {
   details     String?
   createdAt   DateTime @default(now())
 }
+
+// 12. Notifications
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_UPDATED
+  PROJECT_INVITE
+  MESSAGE_RECEIVED
+  TICKET_ASSIGNED
+  REMINDER
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType @default(SYSTEM)
+  title     String
+  content   String
+  link      String?          // Redirection path
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Foreign Keys
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+}
+

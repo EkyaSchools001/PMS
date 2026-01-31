@@ -30,6 +30,19 @@ async function main() {
         },
     });
 
+    const itManager = await prisma.user.upsert({
+        where: { email: 'itmanager@ekya.edu.in' },
+        update: {},
+        create: {
+            email: 'itmanager@ekya.edu.in',
+            fullName: 'IT Manager',
+            passwordHash,
+            role: 'MANAGER',
+            campusAccess: 'Campus A,Campus B,Campus C'
+        },
+    });
+
+
     // 3. Create Employee
     const employee = await prisma.user.upsert({
         where: { email: 'employee@pms.com' },

@@ -3,34 +3,54 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-background: #f8fafc;
+    /* Slate 50 */
+    --bg-card: #ffffff;
+    --text-primary: #000000;
+    /* Pure Black - Forced Dark */
+    --text-secondary: #1a1a1a;
+    /* Very Dark Gray */
+    --border-color: #e2e8f0;
+    /* Slate 200 */
+    --primary-color: #4f46e5;
+    /* Indigo 600 */
+  }
+
+
+
   body {
-    @apply bg-background text-dark font-sans antialiased;
+    @apply bg-[var(--bg-background)] text-[var(--text-primary)] font-sans antialiased transition-colors duration-300;
   }
 }
 
 @layer components {
+
+  /* Buttons */
   .btn {
-    @apply px-5 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-5 py-2.5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
-    @apply bg-primary text-white hover:bg-primary-hover shadow-lg shadow-primary/30 hover:shadow-primary/40 focus:ring-primary;
+    @apply bg-primary text-white hover:bg-primary-hover shadow-lg shadow-primary/30 hover:shadow-primary/40 focus:ring-primary dark:shadow-none;
   }
 
   .btn-secondary {
-    @apply bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 focus:ring-gray-200;
+    @apply bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border-color)] hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:ring-gray-200 dark:focus:ring-slate-700;
   }
 
   .btn-danger {
     @apply bg-danger text-white hover:bg-red-600 shadow-lg shadow-danger/30 focus:ring-danger;
   }
 
+  /* Inputs */
   .input-field {
-    @apply w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-200;
+    @apply w-full px-4 py-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] placeholder-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-200 dark:placeholder-slate-500;
   }
 
+  /* Cards */
   .card {
-    @apply bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-card-hover transition-all duration-300;
+    @apply bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm hover:shadow-md transition-all duration-300 dark:shadow-none;
   }
 
   .badge {
@@ -49,33 +69,38 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full;
+  @apply bg-gray-300 dark:bg-slate-600 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  @apply bg-gray-400 dark:bg-slate-500;
 }
 
 /* Glassmorphism utilities */
 .glass {
-  @apply bg-white/80 backdrop-blur-md border border-white/20;
+  @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white/20 dark:border-slate-700/30;
 }
 
 /* FullCalendar Custom Premium Styling */
 .fc {
   --fc-button-bg-color: transparent;
-  --fc-button-border-color: #e5e7eb;
-  --fc-button-hover-bg-color: #f3f4f6;
-  --fc-button-active-bg-color: #f3f4f6;
-  --fc-border-color: #f3f4f6;
+  --fc-button-border-color: var(--border-color);
+  --fc-button-hover-bg-color: rgba(255, 255, 255, 0.1);
+  --fc-button-active-bg-color: rgba(255, 255, 255, 0.1);
+  --fc-border-color: var(--border-color);
   --fc-today-bg-color: rgba(99, 102, 241, 0.05);
-  --fc-event-bg-color: #6366f1;
-  --fc-event-border-color: #4f46e5;
+  --fc-event-bg-color: var(--primary-color);
+  --fc-event-border-color: var(--primary-color);
+  --fc-page-bg-color: var(--bg-card);
+  --fc-neutral-bg-color: var(--bg-background);
+  --fc-list-event-hover-bg-color: rgba(99, 102, 241, 0.05);
   font-family: inherit;
+  color: var(--text-primary);
 }
 
-.fc-theme-standard td, .fc-theme-standard th {
-  border-color: #f3f4f6 !important;
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: var(--border-color) !important;
 }
 
 .fc .fc-col-header-cell {
@@ -84,11 +109,11 @@
 }
 
 .fc .fc-col-header-cell-cushion {
-  @apply text-xs font-bold text-gray-400 uppercase tracking-widest;
+  @apply text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest;
 }
 
 .fc .fc-daygrid-day-number {
-  @apply text-sm font-semibold text-gray-600 p-2;
+  @apply text-sm font-semibold text-[var(--text-secondary)] p-2;
 }
 
 .fc .fc-daygrid-event {
@@ -101,7 +126,7 @@
 
 .fc .fc-timegrid-slot {
   height: 3em !important;
-  border-bottom: 0 !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
 .fc .fc-timegrid-now-indicator-line {
@@ -109,7 +134,7 @@
 }
 
 .fc-list-event {
-  @apply cursor-pointer hover:bg-gray-50;
+  @apply cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50;
 }
 
 .calendar-container::-webkit-scrollbar {
