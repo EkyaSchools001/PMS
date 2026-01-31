@@ -15,10 +15,10 @@ import {
     Users,
     LayoutDashboard
 } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
-import { formatDistanceToNow } from 'date-fns';
 
 const ManagerDashboard = () => {
     const { user } = useAuth();
@@ -32,7 +32,7 @@ const ManagerDashboard = () => {
     const [ticketLogs, setTicketLogs] = useState([]);
     const [commentText, setCommentText] = useState('');
 
-    const campuses = user?.campusAccess ? user.campusAccess.split(',') : ['Campus A', 'Campus B', 'Campus C'];
+    const campuses = user?.campusAccess ? user.campusAccess.split(',').map(c => c.trim()) : ['Campus A', 'Campus B', 'Campus C'];
 
     const fetchTicketLogs = async (ticketId) => {
         try {
@@ -308,14 +308,54 @@ const ManagerDashboard = () => {
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
                                     <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Campus</p>
-                                    <p className="font-bold text-sm">{selectedTicket.campus || 'Not Provided'}</p>
+                                    <p className="font-bold text-[11px] truncate">{selectedTicket.campus || 'Not Provided'}</p>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Category</p>
+                                    <p className="font-bold text-[11px] truncate">{selectedTicket.category || 'General'}</p>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Priority</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className={clsx(
+                                            "w-2 h-2 rounded-full",
+                                            selectedTicket.priority === 'CRITICAL' ? "bg-red-500" :
+                                                selectedTicket.priority === 'HIGH' ? "bg-orange-500" : "bg-blue-500"
+                                        )}></span>
+                                        <p className="font-bold text-[11px]">{selectedTicket.priority}</p>
+                                    </div>
                                 </div>
                                 <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
                                     <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Created By</p>
-                                    <p className="font-bold text-sm">{selectedTicket.reporter?.fullName || 'User'}</p>
+                                    <p className="font-bold text-[11px] truncate">{selectedTicket.reporter?.fullName || 'User'}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">SLA Deadline</p>
+                                    <div className="flex items-center gap-2">
+                                        <Clock size={12} className={new Date(selectedTicket.slaDeadline) < new Date() ? "text-red-500" : "text-emerald-500"} />
+                                        <p className={clsx(
+                                            "font-bold text-[11px]",
+                                            selectedTicket.slaDeadline && new Date(selectedTicket.slaDeadline) < new Date() ? "text-red-600" : "text-emerald-600"
+                                        )}>
+                                            {selectedTicket.slaDeadline
+                                                ? format(new Date(selectedTicket.slaDeadline), 'MMM d, HH:mm')
+                                                : 'No Deadline'}
+                                            {selectedTicket.slaDeadline && new Date(selectedTicket.slaDeadline) < new Date() ? ' (OVERDUE)' :
+                                                selectedTicket.slaDeadline ? ' (ON TRACK)' : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Submission Date</p>
+                                    <p className="font-bold text-[11px] text-gray-600">
+                                        {new Date(selectedTicket.createdAt).toLocaleString()}
+                                    </p>
                                 </div>
                             </div>
 

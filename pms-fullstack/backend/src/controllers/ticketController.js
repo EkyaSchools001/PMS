@@ -7,8 +7,18 @@ const { createNotification } = require('./notificationController');
  */
 const createTicket = async (req, res) => {
     try {
-        const { title, description, priority, projectId, assigneeId, campus, category } = req.body;
+        let { title, description, priority, projectId, assigneeId, campus, category } = req.body;
         const reporterId = req.user.id;
+
+        // Ensure a projectId exists (for chatbot compatibility)
+        if (!projectId) {
+            const firstProject = await prisma.project.findFirst();
+            projectId = firstProject?.id;
+        }
+
+        if (!projectId) {
+            return res.status(400).json({ message: 'No project found to associate ticket with.' });
+        }
 
         // Set SLA Deadline based on priority
         let slaDeadline = new Date();
@@ -208,16 +218,30 @@ const addTicketComment = async (req, res) => {
 
 const getTicketStatus = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id: inputId } = req.params;
         const user = req.user;
 
-        const ticket = await prisma.ticket.findUnique({
-            where: { id },
+        // Try direct lookup first
+        let ticket = await prisma.ticket.findUnique({
+            where: { id: inputId },
             include: {
                 assignee: { select: { fullName: true } },
                 reporter: { select: { fullName: true, id: true } }
             }
         });
+
+        // If not found, try partial match (for truncated IDs shown in UI)
+        if (!ticket) {
+            ticket = await prisma.ticket.findFirst({
+                where: {
+                    id: { startsWith: inputId }
+                },
+                include: {
+                    assignee: { select: { fullName: true } },
+                    reporter: { select: { fullName: true, id: true } }
+                }
+            });
+        }
 
         if (!ticket) {
             return res.status(404).json({ message: 'Ticket not found.' });
@@ -226,7 +250,7 @@ const getTicketStatus = async (req, res) => {
         // Access Control
         const isOwner = ticket.reporterId === user.id;
         const isAdmin = user.role === 'ADMIN';
-        const campusAccessList = user.campusAccess ? user.campusAccess.split(',') : [];
+        const campusAccessList = user.campusAccess ? user.campusAccess.split(',').map(c => c.trim()) : [];
         const isManager = user.role === 'MANAGER' && campusAccessList.includes(ticket.campus);
 
         if (!isOwner && !isAdmin && !isManager) {

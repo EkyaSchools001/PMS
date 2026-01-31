@@ -18,7 +18,8 @@ const FloatingChatbot = () => {
         { id: 1, text: 'Hi! How can I help you today?', sender: 'bot', type: 'options' }
     ]);
     const [inputText, setInputText] = useState('');
-    const [mode, setMode] = useState('OPTIONS'); // OPTIONS, AWAITING_ID, SHOWING_LIST
+    const [mode, setMode] = useState('OPTIONS'); // OPTIONS, TICKET_LOOKUP, AWAITING_ID, RAISING_TICKET_TITLE, etc.
+    const [ticketForm, setTicketForm] = useState({ title: '', description: '', campus: '', category: '', priority: 'MEDIUM' });
     const chatEndRef = useRef(null);
 
     const scrollToBottom = () => {
@@ -80,13 +81,13 @@ const FloatingChatbot = () => {
                 addMessage('How would you like to check?', 'bot', 'status-choice');
             }, 500);
         } else if (option === '🎫 Raise a New Ticket') {
+            setMode('RAISING_TICKET_TITLE');
             setTimeout(() => {
-                addMessage('Ticket raising via the dashboard has been disabled. Please contact IT directly or use this assistant to track existing ones.', 'bot');
+                addMessage('I can help you with that. First, what is a short title for the issue?', 'bot');
             }, 500);
-
         } else if (option === '❓ Get Help / FAQs') {
             setTimeout(() => {
-                addMessage('I can help you track tickets or guide you through the PMS. What do you need help with?', 'bot');
+                addMessage('I\'m here to help! You can use me to track your issues or raise new ones for the IT team. What specific help do you need?', 'bot');
             }, 500);
         }
     };
@@ -110,10 +111,48 @@ const FloatingChatbot = () => {
         }
     };
 
-    const fetchTicketDetails = async (id) => {
-        addMessage(`Checking status for ${id}...`, 'bot');
+    const handleTicketFormFieldSelection = (field, value) => {
+        addMessage(value, 'user');
+        const updatedForm = { ...ticketForm, [field]: value };
+        setTicketForm(updatedForm);
+
+        if (field === 'campus') {
+            setMode('RAISING_TICKET_CATEGORY');
+            setTimeout(() => {
+                addMessage('Which category best describes the issue?', 'bot', 'category-choice');
+            }, 500);
+        } else if (field === 'category') {
+            setMode('RAISING_TICKET_PRIORITY');
+            setTimeout(() => {
+                addMessage('What is the priority of this request?', 'bot', 'priority-choice');
+            }, 500);
+        } else if (field === 'priority') {
+            submitTicket(updatedForm);
+        }
+    };
+
+    const submitTicket = async (finalForm) => {
+        setMode('SUBMITTING');
+        addMessage('Creating your ticket...', 'bot');
         try {
-            const res = await api.get(`tickets/${id}/status`);
+            const res = await api.post('tickets', finalForm);
+            addMessage(`✅ Ticket created successfully! Your ID is: ${res.data.id.slice(0, 8).toUpperCase()}`, 'bot');
+            setTimeout(() => {
+                addMessage('You can track it anytime using the "Check Status" option.', 'bot');
+                setMode('OPTIONS');
+                setTicketForm({ title: '', description: '', campus: '', category: '', priority: 'MEDIUM' });
+            }, 1000);
+        } catch (err) {
+            addMessage('❌ Failed to create ticket. Please try again later or contact IT directly.', 'bot');
+            setMode('OPTIONS');
+        }
+    };
+
+    const fetchTicketDetails = async (id) => {
+        const cleanId = id.replace(/TCK-/i, '').trim();
+        addMessage(`Checking status for ${cleanId}...`, 'bot');
+        try {
+            const res = await api.get(`tickets/${cleanId}/status`);
             addMessage('Found it! Here are the details:', 'bot', 'ticket-detail', res.data);
         } catch (err) {
             const msg = err.response?.status === 403
@@ -134,9 +173,21 @@ const FloatingChatbot = () => {
 
         if (mode === 'AWAITING_ID') {
             fetchTicketDetails(text);
+        } else if (mode === 'RAISING_TICKET_TITLE') {
+            setTicketForm(prev => ({ ...prev, title: text }));
+            setMode('RAISING_TICKET_DESC');
+            setTimeout(() => {
+                addMessage('Got it. Now, please provide a detailed description of the issue.', 'bot');
+            }, 500);
+        } else if (mode === 'RAISING_TICKET_DESC') {
+            setTicketForm(prev => ({ ...prev, description: text }));
+            setMode('RAISING_TICKET_CAMPUS');
+            setTimeout(() => {
+                addMessage('Which campus are you reporting from?', 'bot', 'campus-choice');
+            }, 500);
         } else {
             setTimeout(() => {
-                addMessage('I\'m an AI assistant. Please use the quick actions for specific tasks like checking ticket status.', 'bot');
+                addMessage('I\'m an AI assistant. Please use the quick actions or follow the prompt to continue.', 'bot');
             }, 500);
         }
     };
@@ -225,6 +276,54 @@ const FloatingChatbot = () => {
                                     </div>
                                 )}
 
+                                {m.type === 'campus-choice' && (
+                                    <div className="mt-4 grid grid-cols-2 gap-2">
+                                        {['Main Campus', 'South Campus', 'Sarjapur Campus', 'Kanakapura Campus'].map(campus => (
+                                            <button
+                                                key={campus}
+                                                onClick={() => handleTicketFormFieldSelection('campus', campus)}
+                                                className="p-3 bg-gray-50 hover:bg-primary/10 hover:text-primary rounded-xl text-[10px] font-bold transition-all border border-gray-100"
+                                            >
+                                                {campus}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {m.type === 'category-choice' && (
+                                    <div className="mt-4 grid grid-cols-2 gap-2">
+                                        {['IT Support', 'Facilities', 'Academic', 'Maintenance', 'Other'].map(cat => (
+                                            <button
+                                                key={cat}
+                                                onClick={() => handleTicketFormFieldSelection('category', cat)}
+                                                className="p-3 bg-gray-50 hover:bg-primary/10 hover:text-primary rounded-xl text-[10px] font-bold transition-all border border-gray-100"
+                                            >
+                                                {cat}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {m.type === 'priority-choice' && (
+                                    <div className="mt-4 flex flex-col gap-2">
+                                        {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map(prio => (
+                                            <button
+                                                key={prio}
+                                                onClick={() => handleTicketFormFieldSelection('priority', prio)}
+                                                className={clsx(
+                                                    "w-full p-3 rounded-xl text-[10px] font-black transition-all border flex justify-between items-center",
+                                                    prio === 'CRITICAL' ? "bg-red-50 text-red-600 border-red-100 hover:bg-red-100" :
+                                                        prio === 'HIGH' ? "bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100" :
+                                                            "bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100"
+                                                )}
+                                            >
+                                                {prio}
+                                                <span className="w-2 h-2 rounded-full bg-current"></span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
                                 {m.type === 'ticket-list' && (
                                     <div className="mt-4 space-y-2">
                                         {m.data.map(t => (
@@ -235,12 +334,15 @@ const FloatingChatbot = () => {
                                             >
                                                 <p className="text-[10px] font-black text-primary">#{t.id.slice(0, 8)}</p>
                                                 <p className="text-[11px] font-bold text-gray-900 truncate">{t.title}</p>
-                                                <div className="flex justify-between items-center mt-1">
-                                                    <span className="text-[9px] text-gray-500 uppercase">{t.campus}</span>
-                                                    <span className={clsx(
-                                                        "text-[8px] px-1.5 py-0.5 rounded font-black",
-                                                        t.status === 'CLOSED' ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
-                                                    )}>{t.status}</span>
+                                                <div className="flex justify-between items-center mt-1 pt-1 border-t border-gray-100">
+                                                    <span className="text-[8px] text-gray-400 font-bold uppercase">{t.category || 'General'}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[8px] text-gray-500 uppercase">{t.campus}</span>
+                                                        <span className={clsx(
+                                                            "text-[8px] px-1.5 py-0.5 rounded font-black",
+                                                            t.status === 'CLOSED' ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                                                        )}>{t.status}</span>
+                                                    </div>
                                                 </div>
                                             </button>
                                         ))}
