@@ -118,4 +118,39 @@ const updateTaskStatus = async (req, res) => {
     }
 };
 
-module.exports = { createTask, getProjectTasks, updateTaskStatus, updateTask };
+// Get tasks assigned to the current user
+const getMyTasks = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const tasks = await prisma.task.findMany({
+            where: {
+                assignees: {
+                    some: { id: userId }
+                }
+            },
+            include: {
+                project: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
+                assignees: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true
+                    }
+                }
+            },
+            orderBy: { dueDate: 'asc' }
+        });
+
+        res.json(tasks);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching assigned tasks', error: error.message });
+    }
+};
+
+module.exports = { createTask, getProjectTasks, updateTaskStatus, updateTask, getMyTasks };

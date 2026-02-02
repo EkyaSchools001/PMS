@@ -4,6 +4,7 @@ const {
     getProjectTasks,
     updateTaskStatus,
     updateTask,
+    getMyTasks,
 } = require('../controllers/taskController');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { authorizeRole, validateProjectAccess, validateTaskAccess } = require('../middlewares/rbacMiddleware');
@@ -19,6 +20,9 @@ router.post('/', authorizeRole(POLICIES.TASKS.CREATE), validateProjectAccess, cr
 // Update Task: Admin/Manager only
 router.put('/:id', authorizeRole([ROLES.ADMIN, ROLES.MANAGER]), validateTaskAccess, updateTask);
 
+
+// Get current user's tasks
+router.get('/my-tasks', getMyTasks);
 
 // Get Tasks: Project members only
 router.get('/project/:projectId', validateProjectAccess, getProjectTasks);

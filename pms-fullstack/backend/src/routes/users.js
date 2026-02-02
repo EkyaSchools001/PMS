@@ -125,6 +125,13 @@ router.put('/:id', async (req, res) => {
             });
         }
 
+        // Managers cannot edit Admin profiles
+        if (isManager && !isAdmin && userToUpdate.role === 'ADMIN') {
+            return res.status(403).json({
+                message: 'Managers cannot edit administrator profiles'
+            });
+        }
+
         // Prepare update data
         const updateData = {};
 
