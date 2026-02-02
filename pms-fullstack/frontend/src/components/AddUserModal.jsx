@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { X, Save, User, Briefcase, Building, Mail, Lock, Calendar } from 'lucide-react';
 import api from '../services/api';
+import clsx from 'clsx';
 
 const AddUserModal = ({ onClose, onSuccess, allUsers }) => {
+    const { user: currentUser } = useAuth();
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -143,7 +146,11 @@ const AddUserModal = ({ onClose, onSuccess, allUsers }) => {
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Reporting Manager</label>
                                 <select
-                                    className="input-field"
+                                    disabled={currentUser?.role !== 'ADMIN'}
+                                    className={clsx(
+                                        "input-field",
+                                        currentUser?.role !== 'ADMIN' && "bg-gray-50 cursor-not-allowed opacity-70"
+                                    )}
                                     value={formData.managerId}
                                     onChange={e => setFormData({ ...formData, managerId: e.target.value })}
                                 >
@@ -152,6 +159,9 @@ const AddUserModal = ({ onClose, onSuccess, allUsers }) => {
                                         <option key={m.id} value={m.id}>{m.fullName}</option>
                                     ))}
                                 </select>
+                                {currentUser?.role !== 'ADMIN' && (
+                                    <p className="text-[9px] text-gray-400 mt-1 italic">* Only Admins can assign managers</p>
+                                )}
                             </div>
                         )}
                     </div>

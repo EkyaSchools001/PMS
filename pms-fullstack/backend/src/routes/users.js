@@ -174,6 +174,12 @@ router.put('/:id', async (req, res) => {
         }
 
         if (managerId !== undefined) {
+            // Only Admin can change or assign managers
+            if (!isAdmin) {
+                return res.status(403).json({
+                    message: 'Only Admins can assign or change reporting managers'
+                });
+            }
             updateData.managerId = managerId || null; // Allow clearing manager
         }
 

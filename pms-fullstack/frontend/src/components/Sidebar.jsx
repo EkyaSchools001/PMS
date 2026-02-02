@@ -61,7 +61,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
     const allNavItems = [
         { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE', 'CUSTOMER'] },
-        { label: 'IT Manager DB', path: '/manager-dashboard', icon: PieChart, roles: ['MANAGER'] },
+        { label: 'Ticket Manager DB', path: '/manager-dashboard', icon: PieChart, roles: ['MANAGER'] },
         { label: 'Projects', path: '/projects', icon: FolderKanban, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE', 'CUSTOMER'] },
 
         { label: 'Team Members', path: '/team', icon: Users, roles: ['ADMIN', 'MANAGER'] },

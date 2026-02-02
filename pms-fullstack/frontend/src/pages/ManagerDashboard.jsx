@@ -136,7 +136,7 @@ const ManagerDashboard = () => {
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">IT Manager Dashboard</h1>
+                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Ticket Manager Dashboard</h1>
                     <p className="text-gray-500 font-medium">Monitoring and assigning tickets for {user?.campusAccess || 'all campuses'}</p>
                 </div>
                 <div className="flex items-center gap-3">

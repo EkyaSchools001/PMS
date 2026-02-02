@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Save, User, Briefcase, Building, Mail } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import clsx from 'clsx';
 
 const EditUserModal = ({ user, onClose, onSuccess, allUsers }) => {
     const [formData, setFormData] = useState({
@@ -139,7 +140,11 @@ const EditUserModal = ({ user, onClose, onSuccess, allUsers }) => {
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Reporting Manager</label>
                                 <select
-                                    className="input-field"
+                                    disabled={currentUser?.role !== 'ADMIN'}
+                                    className={clsx(
+                                        "input-field",
+                                        currentUser?.role !== 'ADMIN' && "bg-gray-50 cursor-not-allowed opacity-70"
+                                    )}
                                     value={formData.managerId}
                                     onChange={e => setFormData({ ...formData, managerId: e.target.value })}
                                 >
@@ -148,6 +153,9 @@ const EditUserModal = ({ user, onClose, onSuccess, allUsers }) => {
                                         <option key={m.id} value={m.id}>{m.fullName} ({m.department || 'General'})</option>
                                     ))}
                                 </select>
+                                {currentUser?.role !== 'ADMIN' && (
+                                    <p className="text-[9px] text-gray-400 mt-1 italic">* Only Admins can reassign managers</p>
+                                )}
                             </div>
                         )}
 
