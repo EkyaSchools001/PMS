@@ -7,10 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
-
 // Enums for Role-Based Access Control
 enum Role {
   ADMIN
