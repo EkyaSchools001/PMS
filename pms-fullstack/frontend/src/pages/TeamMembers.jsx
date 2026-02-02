@@ -3,6 +3,7 @@ import { Users, Mail, Briefcase, Calendar, Search, Filter, Building, ChevronRigh
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import EditUserModal from '../components/EditUserModal';
+import AddUserModal from '../components/AddUserModal';
 
 
 const TeamMembers = () => {
@@ -15,6 +16,7 @@ const TeamMembers = () => {
     const [selectedRole, setSelectedRole] = useState('ALL');
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+    const [showAddModal, setShowAddModal] = useState(false);
 
 
     useEffect(() => {
@@ -138,7 +140,16 @@ const TeamMembers = () => {
                     <p className="text-[var(--text-secondary)] text-lg">Manage departments, hierarchy, and roles.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <span className="text-sm text-[var(--text-secondary)] font-medium">Total: {users.length} members</span>
+                    <span className="text-sm text-[var(--text-secondary)] font-medium mr-2">Total: {users.length} members</span>
+                    {currentUser?.role === 'ADMIN' && (
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="btn btn-primary flex items-center gap-2"
+                        >
+                            <Users size={18} />
+                            Add Member
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -308,6 +319,14 @@ const TeamMembers = () => {
                     user={editingUser}
                     allUsers={users}
                     onClose={() => setEditingUser(null)}
+                    onSuccess={fetchData}
+                />
+            )}
+
+            {showAddModal && (
+                <AddUserModal
+                    allUsers={users}
+                    onClose={() => setShowAddModal(false)}
                     onSuccess={fetchData}
                 />
             )}

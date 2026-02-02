@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-import { LayoutDashboard, FolderKanban, CheckSquare, LogOut, Settings, PieChart, Users, MessageSquare, Calendar, Ticket, Gift, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, CheckSquare, LogOut, Settings, PieChart, Users, MessageSquare, Calendar, Ticket, Gift, Sun, Moon, X } from 'lucide-react';
 import api from '../services/api';
 import clsx from 'clsx';
 
 
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }) => {
     const { user, logout } = useAuth();
     const location = useLocation();
 
@@ -84,99 +84,122 @@ const Sidebar = () => {
     };
 
     return (
+        <>
+            {/* Mobile Overlay */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-in fade-in"
+                    onClick={onClose}
+                ></div>
+            )}
 
-        <div className="w-72 bg-[var(--bg-card)] h-screen fixed left-0 top-0 flex flex-col border-r border-[var(--border-color)] shadow-xl shadow-gray-200/50 dark:shadow-none z-50 transition-colors duration-300">
-            {/* Logo Area */}
-            <div className="p-8 pb-6">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/30 text-white">
-                        <LayoutDashboard size={22} />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">PMS Pro</h1>
-                        <p className="text-xs text-[var(--text-secondary)] font-medium tracking-wide">WORKSPACE</p>
-                    </div>
-                </div>
-
-                {/* User Profile Card */}
-                <div className="bg-[var(--bg-background)] rounded-2xl p-4 border border-[var(--border-color)] mb-2 group cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[var(--bg-card)] border-2 border-[var(--bg-card)] shadow-sm flex items-center justify-center text-sm font-bold text-primary relative">
-                            {user?.fullName?.charAt(0) || 'U'}
-                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[var(--bg-card)] rounded-full"></span>
+            <div className={clsx(
+                "w-72 bg-[var(--bg-card)] h-screen fixed left-0 top-0 flex flex-col border-r border-[var(--border-color)] shadow-xl shadow-gray-200/50 dark:shadow-none z-50 transition-all duration-300 transform lg:translate-x-0",
+                isOpen ? "translate-x-0" : "-translate-x-full"
+            )}>
+                {/* Logo Area */}
+                <div className="p-8 pb-6">
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-primary to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/30 text-white">
+                                <LayoutDashboard size={22} />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">PMS Pro</h1>
+                                <p className="text-xs text-[var(--text-secondary)] font-medium tracking-wide text-nowrap">WORKSPACE</p>
+                            </div>
                         </div>
-                        <div className="overflow-hidden flex-1">
-                            <p className="font-semibold text-sm truncate text-[var(--text-primary)]">{user?.fullName}</p>
-                            <p className="text-xs text-[var(--text-secondary)] capitalize">{user?.role?.toLowerCase()}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar py-2">
-                <p className="px-4 text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Main Menu</p>
-                {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
-                    return (
-                        <Link
-                            key={item.path}
-                            to={item.path}
-                            className={clsx(
-                                'flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 group relative overflow-hidden',
-                                isActive
-                                    ? 'bg-primary text-white shadow-lg shadow-primary/25 font-medium'
-                                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-background)] hover:text-primary'
-                            )}
+                        <button
+                            onClick={onClose}
+                            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg text-gray-400"
                         >
-                            <Icon size={20} className={clsx("transition-colors relative z-10", isActive ? "text-white" : "text-gray-400 group-hover:text-primary")} />
-                            <span className="relative z-10">{item.label}</span>
-                            {isActive && <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/20"></div>}
-                        </Link>
-                    );
-                })}
-            </nav>
+                            <X size={20} />
+                        </button>
+                    </div>
 
-            {/* Footer Actions */}
-            <div className="px-4 pb-4 mt-auto space-y-3">
-                {/* Upcoming Birthdays (Fixed Height/Layout if needed) */}
-                {upcomingBirthdays.length > 0 && (
-                    <div className="mb-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg shadow-indigo-200 dark:shadow-none">
-                        <div className="flex items-center gap-2 mb-3 border-b border-white/20 pb-2">
-                            <Gift size={16} />
-                            <p className="text-xs font-bold uppercase tracking-wider">Birthday</p>
-                        </div>
-                        <div className="space-y-3">
-                            {upcomingBirthdays.map(u => (
-                                <div key={u.id} className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold border border-white/30">
-                                        {u.fullName.charAt(0)}
-                                    </div>
-                                    <div className="overflow-hidden">
-                                        <p className="text-xs font-bold truncate">{u.fullName}</p>
-                                        <p className="text-[10px] text-indigo-100">
-                                            {new Date(u.nextBirthday).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
+                    {/* User Profile Card */}
+                    <div className="bg-[var(--bg-background)] rounded-2xl p-4 border border-[var(--border-color)] mb-2 group cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[var(--bg-card)] border-2 border-[var(--bg-card)] shadow-sm flex items-center justify-center text-sm font-bold text-primary relative">
+                                {user?.fullName?.charAt(0) || 'U'}
+                                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[var(--bg-card)] rounded-full"></span>
+                            </div>
+                            <div className="overflow-hidden flex-1">
+                                <p className="font-semibold text-sm truncate text-[var(--text-primary)]">{user?.fullName}</p>
+                                <p className="text-xs text-[var(--text-secondary)] capitalize">{user?.role?.toLowerCase()}</p>
+                            </div>
                         </div>
                     </div>
-                )}
+                </div>
 
-                {/* Logout Button */}
-                <div className="w-full">
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center justify-center gap-2 px-4 py-3 w-full text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all text-sm font-bold border border-transparent"
-                    >
-                        <LogOut size={18} />
-                        <span>Sign Out</span>
-                    </button>
+                {/* Navigation */}
+                <nav className="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar py-2">
+                    <p className="px-4 text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Main Menu</p>
+                    {navItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                onClick={() => {
+                                    if (window.innerWidth < 1024) onClose();
+                                }}
+                                className={clsx(
+                                    'flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 group relative overflow-hidden',
+                                    isActive
+                                        ? 'bg-primary text-white shadow-lg shadow-primary/25 font-medium'
+                                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-background)] hover:text-primary'
+                                )}
+                            >
+                                <Icon size={20} className={clsx("transition-colors relative z-10", isActive ? "text-white" : "text-gray-400 group-hover:text-primary")} />
+                                <span className="relative z-10">{item.label}</span>
+                                {isActive && <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/20"></div>}
+                            </Link>
+                        );
+                    })}
+                </nav>
+
+                {/* Footer Actions */}
+                <div className="px-4 pb-4 mt-auto space-y-3">
+                    {/* Upcoming Birthdays (Fixed Height/Layout if needed) */}
+                    {upcomingBirthdays.length > 0 && (
+                        <div className="mb-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg shadow-indigo-200 dark:shadow-none">
+                            <div className="flex items-center gap-2 mb-3 border-b border-white/20 pb-2">
+                                <Gift size={16} />
+                                <p className="text-xs font-bold uppercase tracking-wider">Birthday</p>
+                            </div>
+                            <div className="space-y-3">
+                                {upcomingBirthdays.map(u => (
+                                    <div key={u.id} className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold border border-white/30">
+                                            {u.fullName.charAt(0)}
+                                        </div>
+                                        <div className="overflow-hidden">
+                                            <p className="text-xs font-bold truncate">{u.fullName}</p>
+                                            <p className="text-[10px] text-indigo-100 text-nowrap">
+                                                {new Date(u.nextBirthday).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Logout Button */}
+                    <div className="w-full">
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center justify-center gap-2 px-4 py-3 w-full text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all text-sm font-bold border border-transparent"
+                        >
+                            <LogOut size={18} />
+                            <span>Sign Out</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 
 };

@@ -18,7 +18,7 @@ const register = async (req, res) => {
                 email,
                 passwordHash,
                 fullName,
-                role: 'EMPLOYEE', // Security: Force default role, prevent escalation
+                role: role || 'EMPLOYEE',
             },
         });
 

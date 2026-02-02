@@ -23,6 +23,7 @@ import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import ScheduleMeetingModal from '../components/ScheduleMeetingModal';
+import { useSearchParams } from 'react-router-dom';
 
 const CalendarPage = () => {
     const { user } = useAuth();
@@ -34,6 +35,47 @@ const CalendarPage = () => {
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [showFilterPanel, setShowFilterPanel] = useState(false);
     const [calendarRange, setCalendarRange] = useState({ start: null, end: null });
+    const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    useEffect(() => {
+        checkGoogleStatus();
+        handleGoogleCallback();
+    }, []);
+
+    const checkGoogleStatus = async () => {
+        try {
+            const response = await api.get('auth/google/status');
+            setIsGoogleConnected(response.data.isConnected);
+        } catch (error) {
+            console.error('Failed to check Google status:', error);
+        }
+    };
+
+    const handleGoogleCallback = async () => {
+        const code = searchParams.get('code');
+        if (code) {
+            try {
+                await api.post('auth/google/tokens', { code });
+                setIsGoogleConnected(true);
+                alert('Successfully connected to Google Calendar!');
+                // Remove code from URL
+                searchParams.delete('code');
+                setSearchParams(searchParams);
+            } catch (error) {
+                console.error('Failed to exchange Google tokens:', error);
+            }
+        }
+    };
+
+    const handleConnectGoogle = async () => {
+        try {
+            const response = await api.get('auth/google');
+            window.location.href = response.data.url;
+        } catch (error) {
+            alert('Failed to initiate Google connection');
+        }
+    };
 
     useEffect(() => {
         fetchEvents();
@@ -148,6 +190,18 @@ const CalendarPage = () => {
                     >
                         <Filter size={18} />
                         <span className="hidden sm:inline">Filters</span>
+                    </button>
+
+                    <button
+                        onClick={handleConnectGoogle}
+                        className={clsx(
+                            "p-2.5 rounded-xl border transition-all flex items-center gap-2 text-sm font-medium",
+                            isGoogleConnected ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                        )}
+                        title={isGoogleConnected ? "Google Calendar Connected" : "Connect Google Calendar"}
+                    >
+                        <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
+                        <span className="hidden lg:inline">{isGoogleConnected ? "Connected" : "Sync with Google"}</span>
                     </button>
 
                     <button

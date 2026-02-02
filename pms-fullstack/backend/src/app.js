@@ -12,6 +12,7 @@ const calendarRoutes = require('./routes/calendarRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const timeLogRoutes = require('./routes/timeLogRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const calendarAuthRoutes = require('./routes/calendarAuthRoutes');
 
 
 
@@ -46,6 +47,7 @@ app.use('/api/v1/calendar', calendarRoutes);
 app.use('/api/v1/tickets', ticketRoutes);
 app.use('/api/v1/time-logs', timeLogRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/auth', calendarAuthRoutes); // Adding under auth for convenience
 
 
 

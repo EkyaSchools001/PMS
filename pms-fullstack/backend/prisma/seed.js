@@ -9,7 +9,7 @@ async function main() {
     // 1. Create Admin
     const admin = await prisma.user.upsert({
         where: { email: 'admin@pms.com' },
-        update: {},
+        update: { role: 'ADMIN' },
         create: {
             email: 'admin@pms.com',
             fullName: 'Admin User',
@@ -21,7 +21,7 @@ async function main() {
     // 2. Create Manager
     const manager = await prisma.user.upsert({
         where: { email: 'manager@pms.com' },
-        update: {},
+        update: { role: 'MANAGER' },
         create: {
             email: 'manager@pms.com',
             fullName: 'Project Manager',
@@ -32,7 +32,7 @@ async function main() {
 
     const itManager = await prisma.user.upsert({
         where: { email: 'itmanager@ekya.edu.in' },
-        update: {},
+        update: { role: 'MANAGER' },
         create: {
             email: 'itmanager@ekya.edu.in',
             fullName: 'IT Manager',
@@ -46,7 +46,7 @@ async function main() {
     // 3. Create Employee
     const employee = await prisma.user.upsert({
         where: { email: 'employee@pms.com' },
-        update: {},
+        update: { role: 'EMPLOYEE' },
         create: {
             email: 'employee@pms.com',
             fullName: 'John Doe',
@@ -58,7 +58,7 @@ async function main() {
     // 4. Create Customer
     const customer = await prisma.user.upsert({
         where: { email: 'customer@pms.com' },
-        update: {},
+        update: { role: 'CUSTOMER' },
         create: {
             email: 'customer@pms.com',
             fullName: 'Acme Corp',
@@ -85,14 +85,18 @@ async function main() {
                         description: 'Create high-fidelity mockups for the homepage.',
                         priority: 'HIGH',
                         status: 'IN_PROGRESS',
-                        assigneeId: employee.id,
+                        assignees: {
+                            connect: { id: employee.id }
+                        },
                     },
                     {
                         title: 'Setup React App',
                         description: 'Initialize the frontend repository.',
                         priority: 'MEDIUM',
                         status: 'DONE',
-                        assigneeId: employee.id,
+                        assignees: {
+                            connect: { id: employee.id }
+                        },
                     },
                 ],
             },

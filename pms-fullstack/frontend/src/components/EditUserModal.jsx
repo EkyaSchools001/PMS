@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, User, Briefcase, Building, Mail } from 'lucide-react';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const EditUserModal = ({ user, onClose, onSuccess, allUsers }) => {
     const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const EditUserModal = ({ user, onClose, onSuccess, allUsers }) => {
         dateOfBirth: ''
     });
 
+    const { user: currentUser } = useAuth();
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -96,7 +98,8 @@ const EditUserModal = ({ user, onClose, onSuccess, allUsers }) => {
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Role</label>
                                 <select
-                                    className="input-field"
+                                    disabled={currentUser?.role !== 'ADMIN'}
+                                    className={`input-field ${currentUser?.role !== 'ADMIN' ? 'bg-gray-50 cursor-not-allowed opacity-70' : ''}`}
                                     value={formData.role}
                                     onChange={e => setFormData({ ...formData, role: e.target.value })}
                                 >
@@ -105,6 +108,9 @@ const EditUserModal = ({ user, onClose, onSuccess, allUsers }) => {
                                     <option value="ADMIN">Admin</option>
                                     <option value="CUSTOMER">Customer</option>
                                 </select>
+                                {currentUser?.role !== 'ADMIN' && (
+                                    <p className="text-[9px] text-gray-400 mt-1 italic">* Only Admins can change roles</p>
+                                )}
                             </div>
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Department</label>

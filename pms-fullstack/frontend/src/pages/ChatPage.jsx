@@ -6,7 +6,7 @@ import { initiateSocketConnection, disconnectSocket } from '../services/socketSe
 
 const ChatPage = () => {
     const [selectedChat, setSelectedChat] = useState(null);
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const initialChatId = searchParams.get('chatId');
 
     useEffect(() => {
@@ -19,14 +19,28 @@ const ChatPage = () => {
         };
     }, []);
 
+    // Clear search param and local selection
+    const handleBack = () => {
+        setSelectedChat(null);
+        setSearchParams({});
+    };
+
     return (
-        <div className="flex h-screen bg-white">
-            <ChatSidebar
-                onSelectChat={setSelectedChat}
-                activeChatId={selectedChat?.id}
-                initialChatId={initialChatId}
-            />
-            <ChatWindow chat={selectedChat} />
+        <div className="flex h-[calc(100vh-120px)] bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-xl">
+            <div className={`${selectedChat ? 'hidden lg:block' : 'block'} w-full lg:w-96 h-full border-r border-gray-100`}>
+                <ChatSidebar
+                    onSelectChat={setSelectedChat}
+                    activeChatId={selectedChat?.id}
+                    initialChatId={initialChatId}
+                />
+            </div>
+
+            <div className={`${selectedChat ? 'block' : 'hidden lg:flex'} flex-1 h-full`}>
+                <ChatWindow
+                    chat={selectedChat}
+                    onBack={handleBack}
+                />
+            </div>
         </div>
     );
 };

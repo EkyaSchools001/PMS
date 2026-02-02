@@ -1,5 +1,6 @@
 const prisma = require('../utils/prisma');
 const { sendMeetingEmail } = require('../services/emailService');
+const { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } = require('../services/googleCalendarService');
 
 /**
  * @desc    Get meetings for current user
@@ -133,6 +134,32 @@ const scheduleMeeting = async (req, res) => {
             });
         });
 
+        // 5. Sync with Google Calendar (if connected)
+        try {
+            const user = await prisma.user.findUnique({
+                where: { id: req.user.id }
+            });
+
+            if (user.googleAccessToken && user.googleRefreshToken) {
+                // Fetch room details if any
+                const roomInfo = roomId ? await prisma.meetingRoom.findUnique({ where: { id: roomId } }) : null;
+                const googleEvent = await createCalendarEvent(user, {
+                    ...meeting,
+                    room: roomInfo
+                });
+
+                if (googleEvent && googleEvent.id) {
+                    await prisma.meeting.update({
+                        where: { id: meeting.id },
+                        data: { googleEventId: googleEvent.id }
+                    });
+                }
+            }
+        } catch (syncError) {
+            console.error('Failed to sync with Google Calendar:', syncError);
+            // We don't fail the request if sync fails
+        }
+
         res.status(201).json(meeting);
     } catch (error) {
         res.status(500).json({ message: 'Error scheduling meeting', error: error.message });
@@ -187,6 +214,19 @@ const cancelMeeting = async (req, res) => {
             where: { id },
             data: { status: 'CANCELLED' }
         });
+
+        // Sync with Google Calendar (if connected)
+        try {
+            const user = await prisma.user.findUnique({
+                where: { id: req.user.id }
+            });
+
+            if (user.googleAccessToken && user.googleRefreshToken && meeting.googleEventId) {
+                await deleteCalendarEvent(user, meeting.googleEventId);
+            }
+        } catch (syncError) {
+            console.error('Failed to delete Google Calendar event:', syncError);
+        }
 
         res.status(200).json({ message: 'Meeting cancelled' });
     } catch (error) {
@@ -277,6 +317,32 @@ const updateMeeting = async (req, res) => {
                         status: 'PENDING'
                     }))
             });
+        }
+
+        // Sync with Google Calendar (if connected)
+        try {
+            const user = await prisma.user.findUnique({
+                where: { id: req.user.id }
+            });
+
+            if (user.googleAccessToken && user.googleRefreshToken) {
+                const roomInfo = meeting.roomId ? await prisma.meetingRoom.findUnique({ where: { id: meeting.roomId } }) : null;
+                const meetingData = { ...meeting, room: roomInfo };
+
+                if (meeting.googleEventId) {
+                    await updateCalendarEvent(user, meeting.googleEventId, meetingData);
+                } else {
+                    const googleEvent = await createCalendarEvent(user, meetingData);
+                    if (googleEvent && googleEvent.id) {
+                        await prisma.meeting.update({
+                            where: { id: meeting.id },
+                            data: { googleEventId: googleEvent.id }
+                        });
+                    }
+                }
+            }
+        } catch (syncError) {
+            console.error('Failed to sync update with Google Calendar:', syncError);
         }
 
         res.status(200).json(meeting);

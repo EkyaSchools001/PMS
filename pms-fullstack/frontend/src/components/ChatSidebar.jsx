@@ -105,7 +105,7 @@ const ChatSidebar = ({ onSelectChat, activeChatId, onNewChat, initialChatId }) =
 
     if (loading) {
         return (
-            <div className="w-[400px] bg-white h-full border-r flex items-center justify-center">
+            <div className="w-full bg-white h-full border-r flex items-center justify-center">
                 <div className="w-8 h-8 border-4 border-gray-200 border-t-emerald-500 rounded-full animate-spin"></div>
             </div>
         );
@@ -113,7 +113,7 @@ const ChatSidebar = ({ onSelectChat, activeChatId, onNewChat, initialChatId }) =
 
     return (
         <>
-            <div className="w-[400px] bg-white h-full border-r border-gray-200 flex flex-col">
+            <div className="w-full bg-white h-full border-r border-gray-200 flex flex-col">
                 {/* Header */}
                 <div className="h-16 px-4 bg-gray-100 border-b border-gray-200 flex items-center justify-between shrink-0">
                     <div className="w-10 h-10 rounded-full bg-gray-300">

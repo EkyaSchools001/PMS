@@ -125,6 +125,11 @@ model User {
   notifications     Notification[]
   campusAccess      String?        // Comma-separated campuses
   ticketComments    TicketComment[] @relation("CommentAuthor")
+
+  // Google Integration
+  googleAccessToken  String?
+  googleRefreshToken String?
+  googleEmail        String?
 }
 
 
@@ -409,6 +414,7 @@ model Meeting {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  googleEventId String?
 }
 
 model MeetingParticipant {

@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import api from '../services/api';
 import { joinChat, subscribeToMessages } from '../services/socketService';
-import { Send, Paperclip, MoreVertical, Search, Phone, Video } from 'lucide-react';
+import { Send, Paperclip, MoreVertical, Search, Phone, Video, ArrowLeft } from 'lucide-react';
 import useWebRTC from '../hooks/useWebRTC';
 import CallModal from './CallModal';
 
-const ChatWindow = ({ chat }) => {
+const ChatWindow = ({ chat, onBack }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const messagesEndRef = useRef(null);
@@ -179,6 +179,12 @@ const ChatWindow = ({ chat }) => {
             {/* Header */}
             <div className="h-16 bg-gray-100 flex items-center justify-between px-4 py-2 shadow-sm z-10 shrink-0">
                 <div className="flex items-center gap-4 cursor-pointer">
+                    <button
+                        onClick={onBack}
+                        className="lg:hidden p-1 hover:bg-gray-200 rounded-lg text-gray-500"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
                     <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden">
                         <img
                             src={`https://ui-avatars.com/api/?name=${getChatName()}&background=random`}

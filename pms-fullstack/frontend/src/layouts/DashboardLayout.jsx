@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
-import { Bell, LogOut, User, Mail, Briefcase, Edit2, ChevronDown, X } from 'lucide-react';
+import { Bell, LogOut, User, Mail, Briefcase, Edit2, ChevronDown, X, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -14,6 +14,7 @@ const DashboardLayout = ({ children }) => {
     const navigate = useNavigate();
     const [showProfileDropdown, setShowProfileDropdown] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [editFormData, setEditFormData] = useState({
         fullName: '',
         email: '',
@@ -150,12 +151,19 @@ const DashboardLayout = ({ children }) => {
 
     return (
         <div className="min-h-screen bg-[var(--bg-background)] flex font-sans text-[var(--text-primary)] transition-colors duration-300">
-            <Sidebar />
-            <main className="flex-1 ml-72 relative">
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
+            <main className="flex-1 lg:ml-72 relative min-w-0">
                 {/* Top Navigation Bar */}
-                <header className="sticky top-0 z-40 bg-[var(--bg-card)]/80 backdrop-blur-md border-b border-[var(--border-color)] px-8 py-4 flex justify-between items-center transition-colors duration-300">
+                <header className="sticky top-0 z-40 bg-[var(--bg-card)]/80 backdrop-blur-md border-b border-[var(--border-color)] px-4 sm:px-8 py-4 flex justify-between items-center transition-colors duration-300">
 
                     <div className="flex items-center gap-4 flex-1">
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg text-[var(--text-secondary)]"
+                        >
+                            <Menu size={24} />
+                        </button>
                         {/* Search removed as requested */}
                     </div>
 
@@ -292,7 +300,7 @@ const DashboardLayout = ({ children }) => {
                 </header>
 
                 {/* Main Content */}
-                <div className="p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
+                <div className="p-4 sm:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
                     {children}
                 </div>
             </main>

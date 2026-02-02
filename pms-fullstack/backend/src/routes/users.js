@@ -2,11 +2,59 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 
-const { authenticate } = require('../middlewares/authMiddleware');
+const { authenticate, authorize } = require('../middlewares/authMiddleware');
+const { hashPassword } = require('../utils/password');
 
 const prisma = new PrismaClient();
 
 router.use(authenticate);
+
+// Create new user (Admin only)
+router.post('/', authorize(['ADMIN']), async (req, res) => {
+    try {
+        const { fullName, email, password, role, department, managerId, dateOfBirth } = req.body;
+
+        if (!fullName || !email || !password) {
+            return res.status(400).json({ message: 'Full name, email and password are required' });
+        }
+
+        // Check if user exists
+        const existingUser = await prisma.user.findUnique({
+            where: { email: email.trim() }
+        });
+
+        if (existingUser) {
+            return res.status(400).json({ message: 'User with this email already exists' });
+        }
+
+        const hashedPassword = await hashPassword(password);
+
+        const newUser = await prisma.user.create({
+            data: {
+                fullName: fullName.trim(),
+                email: email.trim(),
+                passwordHash: hashedPassword,
+                role: role || 'EMPLOYEE',
+                department: department || null,
+                managerId: managerId || null,
+                dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null
+            },
+            select: {
+                id: true,
+                email: true,
+                fullName: true,
+                role: true,
+                department: true,
+                createdAt: true
+            }
+        });
+
+        res.status(201).json(newUser);
+    } catch (error) {
+        console.error('Error creating user:', error);
+        res.status(500).json({ message: 'Failed to create user', error: error.message });
+    }
+});
 
 // Get all users (for team members page and chat)
 router.get('/', async (req, res) => {
@@ -100,11 +148,11 @@ router.put('/:id', async (req, res) => {
             updateData.email = email.trim();
         }
 
-        // Only Admin and Manager can change roles
+        // Only Admin can change roles
         if (role !== undefined) {
-            if (!isAdmin && !isManager) {
+            if (!isAdmin) {
                 return res.status(403).json({
-                    message: 'Only Admins and Managers can change user roles'
+                    message: 'Only Admins can change user roles'
                 });
             }
             updateData.role = role;

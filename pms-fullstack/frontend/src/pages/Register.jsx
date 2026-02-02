@@ -105,7 +105,7 @@ const Register = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Role</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Account Role</label>
                         <div className="relative group">
                             <div className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-primary transition-colors">
                                 <Shield size={20} />
@@ -116,9 +116,9 @@ const Register = () => {
                                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                             >
                                 <option value="EMPLOYEE">Employee</option>
-                                <option value="MANAGER">Manager</option>
-                                <option value="ADMIN">Admin</option>
-                                <option value="CUSTOMER">Customer</option>
+                                <option value="MANAGER">Project Manager</option>
+                                <option value="ADMIN">System Administrator</option>
+                                <option value="CUSTOMER">Customer / External</option>
                             </select>
                         </div>
                     </div>
