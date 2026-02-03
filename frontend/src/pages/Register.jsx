@@ -104,6 +104,28 @@ const Register = () => {
                         </div>
                     </div>
 
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Account Role</label>
+                        <div className="relative group">
+                            <div className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-primary transition-colors">
+                                <Shield size={20} />
+                            </div>
+                            <select
+                                className="input-field pl-12 py-3 bg-gray-50 focus:bg-white transition-all appearance-none"
+                                value={formData.role}
+                                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                            >
+                                <option value="EMPLOYEE">Employee</option>
+                                <option value="MANAGER">Manager</option>
+                                <option value="ADMIN">Admin</option>
+                                <option value="CUSTOMER">Customer</option>
+                            </select>
+                            <div className="absolute right-4 top-4 text-gray-400 pointer-events-none">
+                                <ArrowRight size={16} className="rotate-90" />
+                            </div>
+                        </div>
+                    </div>
+
 
                     <button
                         type="submit"
