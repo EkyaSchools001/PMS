@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Mail, Briefcase, Calendar, Search, Filter, Building, ChevronRight, Edit2 } from 'lucide-react';
+import { Users, Mail, Briefcase, Calendar, Search, Filter, Building, ChevronRight, Edit2, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import EditUserModal from '../components/EditUserModal';
@@ -49,6 +49,23 @@ const TeamMembers = () => {
             setError(error.response?.data?.message || 'Failed to load team members. Please try again.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteUser = async (user) => {
+        if (user.id === currentUser.id) {
+            alert("You cannot delete your own account.");
+            return;
+        }
+
+        if (window.confirm(`Are you sure you want to delete ${user.fullName}? This action cannot be undone.`)) {
+            try {
+                await api.delete(`users/${user.id}`);
+                fetchData();
+            } catch (error) {
+                console.error('Failed to delete user', error);
+                alert(error.response?.data?.message || 'Failed to delete user. They may have active assignments.');
+            }
         }
     };
 
@@ -248,9 +265,24 @@ const TeamMembers = () => {
                                                 </div>
                                             </div>
                                             {(currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER') && (
-                                                <button onClick={() => setEditingUser(user)} className="p-2 text-[var(--text-secondary)] hover:text-primary hover:bg-[var(--bg-background)] rounded-xl transition-colors opacity-0 group-hover:opacity-100">
-                                                    <Edit2 size={16} />
-                                                </button>
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => setEditingUser(user)}
+                                                        className="p-2 text-[var(--text-secondary)] hover:text-primary hover:bg-[var(--bg-background)] rounded-xl transition-colors"
+                                                        title="Edit User"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    {currentUser?.role === 'ADMIN' && user.id !== currentUser.id && (
+                                                        <button
+                                                            onClick={() => handleDeleteUser(user)}
+                                                            className="p-2 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                                            title="Delete User"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)] mb-1">

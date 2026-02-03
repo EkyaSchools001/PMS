@@ -208,4 +208,67 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// Delete user (Admin only)
+router.delete('/:id', authorize(['ADMIN']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const currentUser = req.user;
+
+        // Prevent deleting oneself
+        if (id === currentUser.id) {
+            return res.status(400).json({ message: 'You cannot delete your own account' });
+        }
+
+        // Check if user exists and has dependencies
+        const user = await prisma.user.findUnique({
+            where: { id },
+            include: {
+                _count: {
+                    select: {
+                        managedProjects: true,
+                        assignedTasks: true,
+                        ticketsAssigned: true,
+                        employees: true
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // If user has active responsibilities, prevent deletion
+        if (user._count.managedProjects > 0 ||
+            user._count.assignedTasks > 0 ||
+            user._count.ticketsAssigned > 0 ||
+            user._count.employees > 0) {
+
+            return res.status(400).json({
+                message: 'Cannot delete user with active assignments. Please reassign their projects, tasks, tickets, or direct reports first.',
+                details: user._count
+            });
+        }
+
+        // Perform deletion (using transaction or simple delete if relations allow)
+        // Note: Some models might still prevent deletion if not listed above (e.g., TimeLogs)
+        // but we'll try to delete and catch any remaining FK issues.
+        await prisma.user.delete({
+            where: { id }
+        });
+
+        res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+
+        if (error.code === 'P2003') {
+            return res.status(400).json({
+                message: 'Cannot delete user because they are referenced by other records (e.g., messages, logs). Consider deactivating them instead or contact support.'
+            });
+        }
+
+        res.status(500).json({ message: 'Failed to delete user' });
+    }
+});
+
 module.exports = router;
