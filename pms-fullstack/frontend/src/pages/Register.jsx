@@ -42,7 +42,7 @@ const Register = () => {
                         <LayoutDashboard size={28} />
                     </div>
                     <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Create Account</h2>
-                    <p className="text-gray-500 mt-3 text-lg">Start your 14-day free trial</p>
+
                 </div>
 
                 {error && (
