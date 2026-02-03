@@ -1,9 +1,10 @@
 {
   "name": "pms-fullstack",
   "version": "1.0.0",
-  "description": "",
+  "description": "Project Management System",
   "main": "index.js",
   "scripts": {
+    "build": "npm install --prefix frontend && npm run build --prefix frontend",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
