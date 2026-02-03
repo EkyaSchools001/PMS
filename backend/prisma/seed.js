@@ -9,7 +9,10 @@ async function main() {
     // 1. Create Admin
     const admin = await prisma.user.upsert({
         where: { email: 'admin@pms.com' },
-        update: { role: 'ADMIN' },
+        update: {
+            role: 'ADMIN',
+            passwordHash: passwordHash
+        },
         create: {
             email: 'admin@pms.com',
             fullName: 'Admin User',
@@ -21,7 +24,10 @@ async function main() {
     // 2. Create Manager
     const manager = await prisma.user.upsert({
         where: { email: 'manager@pms.com' },
-        update: { role: 'MANAGER' },
+        update: {
+            role: 'MANAGER',
+            passwordHash: passwordHash
+        },
         create: {
             email: 'manager@pms.com',
             fullName: 'Project Manager',
@@ -32,7 +38,10 @@ async function main() {
 
     const itManager = await prisma.user.upsert({
         where: { email: 'itmanager@ekya.edu.in' },
-        update: { role: 'MANAGER' },
+        update: {
+            role: 'MANAGER',
+            passwordHash: passwordHash
+        },
         create: {
             email: 'itmanager@ekya.edu.in',
             fullName: 'IT Manager',
@@ -46,7 +55,10 @@ async function main() {
     // 3. Create Employee
     const employee = await prisma.user.upsert({
         where: { email: 'employee@pms.com' },
-        update: { role: 'EMPLOYEE' },
+        update: {
+            role: 'EMPLOYEE',
+            passwordHash: passwordHash
+        },
         create: {
             email: 'employee@pms.com',
             fullName: 'John Doe',
@@ -58,7 +70,10 @@ async function main() {
     // 4. Create Customer
     const customer = await prisma.user.upsert({
         where: { email: 'customer@pms.com' },
-        update: { role: 'CUSTOMER' },
+        update: {
+            role: 'CUSTOMER',
+            passwordHash: passwordHash
+        },
         create: {
             email: 'customer@pms.com',
             fullName: 'Acme Corp',
