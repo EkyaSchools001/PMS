@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "npm start --prefix backend",
-    "build": "npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend && npx prisma generate --prefix backend",
+    "build": "npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend && npx prisma generate --schema=backend/prisma/schema.prisma",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
