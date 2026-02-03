@@ -52,8 +52,19 @@ app.use('/api/v1/auth', calendarAuthRoutes); // Adding under auth for convenienc
 
 
 
-app.get('/', (req, res) => {
-    res.send('Project Management System API is running...');
+// Serve static files from the React app
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendPath));
+
+// The "catch-all" handler: for any request that doesn't
+// match one of the API routes above, send back React's index.html file.
+app.get('*', (req, res) => {
+    // If it's an API request that wasn't caught by the routes above, return 404
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ message: 'API route not found' });
+    }
+    // Otherwise, serve the frontend's index.html
+    res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // Error Handling Middleware
