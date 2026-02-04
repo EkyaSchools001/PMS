@@ -7,7 +7,7 @@ compatibility_flags = [ "nodejs_compat" ]
 [[d1_databases]]
 binding = "DB"
 database_name = "ekya"
-database_id = "cbe7f0c6-f325-4629-a629-5b9e7f0c6f32"  # Replace with your actual full UUID from Cloudflare dashboard
+database_id = "cbe7f0c6-f325-4629-a4ae-17f209f15982"  # Replace with your actual full UUID from Cloudflare dashboard
 
 # Environment Variables (set these in Cloudflare dashboard or via wrangler secret)
 [vars]
