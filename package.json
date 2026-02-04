@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "npm start --prefix backend",
-    "build": "npm ci --prefix frontend --no-audit --no-fund && npm run build --prefix frontend && npm ci --prefix backend --no-audit --no-fund && npm run generate --prefix backend",
+    "build": "npm ci --prefix frontend --no-audit --no-fund --production=false && npm run build --prefix frontend && npm ci --prefix backend --no-audit --no-fund --production=false && npm run generate --prefix backend",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
