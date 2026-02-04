@@ -2,10 +2,6 @@ let cachedApp;
 let cachedServer;
 let prisma;
 
-// Fix for iconv-lite on Cloudflare Workers
-import iconv from 'iconv-lite';
-import 'node:stream';
-iconv.enableStreamingAPI = false;
 
 
 export default {
