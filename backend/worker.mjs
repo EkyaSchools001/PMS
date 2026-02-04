@@ -16,6 +16,9 @@ export default {
                 globalThis.prisma = getPrisma(env.DB);
                 cachedApp = app;
                 cachedServer = createServer(cachedApp);
+
+                // Ensure the server is "listening" so handleAsNodeRequest can find a port
+                cachedServer.listen(0);
             }
 
             const { handleAsNodeRequest } = await import('cloudflare:node');
