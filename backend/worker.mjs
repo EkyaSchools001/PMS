@@ -1,29 +1,26 @@
 import { handleAsNodeRequest } from 'cloudflare:node';
+import { createServer } from 'node:http';
 
-let cachedApp;
+let server;
 
 export default {
     async fetch(request, env, ctx) {
         try {
-            if (!cachedApp) {
-                // Lazy load everything to avoid startup memory limits
-                const { default: app } = await import('./src/app.js');
-                const { getPrisma } = await import('./src/db/prisma-d1.js');
+            if (!server) {
+                // Create a minimal Node.js server to test the bridge
+                server = createServer((req, res) => {
+                    res.writeHead(200, { 'Content-Type': 'text/plain' });
+                    res.end('Bridge is working! 🦾 - ' + new Date().toISOString());
+                });
 
-                // Initialize Prisma with the D1 binding
-                globalThis.prisma = getPrisma(env.DB);
-                cachedApp = app;
+                // Try listening on a standard port
+                server.listen(8080);
             }
 
-            // Sync environment variables for the app
-            cachedApp.set('env', env);
-            process.env.PORT = '8787'; // Satisfy internal Node.js port checks
-
-            // Use Cloudflare's bridge to handle the Express app
-            return await handleAsNodeRequest(cachedApp, request, env, ctx);
+            return await handleAsNodeRequest(server, request, env, ctx);
         } catch (error) {
-            console.error('Worker Error:', error);
-            return new Response(`Worker Error: ${error.message}\nStack: ${error.stack}`, {
+            console.error('Bridge Error:', error);
+            return new Response(`Bridge Error: ${error.message}\nStack: ${error.stack}`, {
                 status: 500,
                 headers: { 'Content-Type': 'text/plain' }
             });
