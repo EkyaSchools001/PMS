@@ -1,18 +1,18 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.mailtrap.io',
-    port: process.env.SMTP_PORT || 2525,
+    host: process.env.SMTP_HOST || globalThis.SMTP_HOST || 'smtp.mailtrap.io',
+    port: process.env.SMTP_PORT || globalThis.SMTP_PORT || 2525,
     auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: process.env.SMTP_USER || globalThis.SMTP_USER,
+        pass: process.env.SMTP_PASS || globalThis.SMTP_PASS
     }
 });
 
 /**
  * @desc    Send meeting invitation/update email
  */
-const sendMeetingEmail = async (to, subject, meetingDetails) => {
+export const sendMeetingEmail = async (to, subject, meetingDetails) => {
     const { title, startTime, endTime, isOnline, meetingLink, roomName, organizerName } = meetingDetails;
 
     const html = `
@@ -49,7 +49,7 @@ const sendMeetingEmail = async (to, subject, meetingDetails) => {
 /**
  * @desc    Send ticket creation/reminder email
  */
-const sendTicketEmail = async (to, subject, ticketDetails) => {
+export const sendTicketEmail = async (to, subject, ticketDetails) => {
     const { title, priority, reporterName, description, projectName, isReminder } = ticketDetails;
 
     const html = `
@@ -89,7 +89,7 @@ const sendTicketEmail = async (to, subject, ticketDetails) => {
 /**
  * @desc    Send time log notification
  */
-const sendTimeLogEmail = async (to, subject, logDetails) => {
+export const sendTimeLogEmail = async (to, subject, logDetails) => {
     const { userName, projectName, taskName, hours, date, description } = logDetails;
 
     const html = `
@@ -124,11 +124,3 @@ const sendTimeLogEmail = async (to, subject, logDetails) => {
         console.error('Failed to send time log email:', error);
     }
 };
-
-module.exports = {
-    sendMeetingEmail,
-    sendTicketEmail,
-    sendTimeLogEmail
-};
-
-

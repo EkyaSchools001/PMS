@@ -1,13 +1,13 @@
-const prisma = require('../utils/prisma');
-const { ROLES } = require('../utils/policies');
-const { createNotification } = require('./notificationController');
-
+import prisma from '../utils/prisma.js';
+import { ROLES } from '../utils/policies.js';
+import { createNotification } from './notificationController.js';
 
 // Create a new project
-const createProject = async (req, res) => {
+export const createProject = async (c) => {
     try {
-        const { name, description, startDate, endDate, budget, customerId, managerId: selectedManagerId, memberIds = [] } = req.body;
-        const creatorId = req.user.id;
+        const { name, description, startDate, endDate, budget, customerId, managerId: selectedManagerId, memberIds = [] } = await c.req.json();
+        const user = c.get('user');
+        const creatorId = user.id;
         const managerId = selectedManagerId || creatorId;
 
         // Combine all unique participants (manager, members, creator)
@@ -34,7 +34,6 @@ const createProject = async (req, res) => {
             chatParticipants.push({ userId: customerId });
         }
 
-
         await prisma.chat.create({
             data: {
                 type: 'PROJECT_GROUP',
@@ -59,23 +58,22 @@ const createProject = async (req, res) => {
             }
         });
 
-        res.status(201).json(project);
+        return c.json(project, 201);
     } catch (error) {
-        res.status(500).json({ message: 'Error creating project', error: error.message });
+        return c.json({ message: 'Error creating project', error: error.message }, 500);
     }
 };
 
-
 // Get all projects (Admin sees all, Manager sees theirs, Employee sees assigned)
-const getProjects = async (req, res) => {
+export const getProjects = async (c) => {
     try {
-        const { role, id } = req.user;
+        const user = c.get('user');
+        const { role, id } = user;
         let where = {};
 
         if (role === ROLES.MANAGER) {
             where = { managerId: id };
         } else if (role === ROLES.EMPLOYEE) {
-            // Employees see projects they are members of
             where = {
                 members: {
                     some: {
@@ -86,7 +84,6 @@ const getProjects = async (req, res) => {
         } else if (role === ROLES.CUSTOMER) {
             where = { customerId: id };
         }
-        // Admin sees all (empty where)
 
         const projects = await prisma.project.findMany({
             where,
@@ -107,17 +104,16 @@ const getProjects = async (req, res) => {
             },
         });
 
-
-        res.json(projects);
+        return c.json(projects);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching projects', error: error.message });
+        return c.json({ message: 'Error fetching projects', error: error.message }, 500);
     }
 };
 
 // Get single project details
-const getProjectById = async (req, res) => {
+export const getProjectById = async (c) => {
     try {
-        const { id } = req.params;
+        const { id } = c.req.param();
         const project = await prisma.project.findUnique({
             where: { id },
             include: {
@@ -138,22 +134,21 @@ const getProjectById = async (req, res) => {
             },
         });
 
-
         if (!project) {
-            return res.status(404).json({ message: 'Project not found' });
+            return c.json({ message: 'Project not found' }, 404);
         }
 
-        res.json(project);
+        return c.json(project);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching project', error: error.message });
+        return c.json({ message: 'Error fetching project', error: error.message }, 500);
     }
 };
 
 // Update project
-const updateProject = async (req, res) => {
+export const updateProject = async (c) => {
     try {
-        const { id } = req.params;
-        const data = req.body;
+        const { id } = c.req.param();
+        const data = await c.req.json();
 
         // Convert dates if present
         if (data.startDate) data.startDate = new Date(data.startDate);
@@ -176,28 +171,28 @@ const updateProject = async (req, res) => {
             }).catch(() => { }); // Ignore if already in chat
         }
 
-        res.json(project);
+        return c.json(project);
     } catch (error) {
-        res.status(500).json({ message: 'Error updating project', error: error.message });
+        return c.json({ message: 'Error updating project', error: error.message }, 500);
     }
 };
 
 // Delete project
-const deleteProject = async (req, res) => {
+export const deleteProject = async (c) => {
     try {
-        const { id } = req.params;
+        const { id } = c.req.param();
         await prisma.project.delete({ where: { id } });
-        res.json({ message: 'Project deleted successfully' });
+        return c.json({ message: 'Project deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting project', error: error.message });
+        return c.json({ message: 'Error deleting project', error: error.message }, 500);
     }
 };
 
 // Add member to project
-const addMember = async (req, res) => {
+export const addMember = async (c) => {
     try {
-        const { id } = req.params;
-        const { userId } = req.body;
+        const { id } = c.req.param();
+        const { userId } = await c.req.json();
 
         const project = await prisma.project.update({
             where: { id },
@@ -219,17 +214,17 @@ const addMember = async (req, res) => {
             }).catch(() => { }); // Ignore if already in chat
         }
 
-        res.json(project);
+        return c.json(project);
     } catch (error) {
-        res.status(500).json({ message: 'Error adding member', error: error.message });
+        return c.json({ message: 'Error adding member', error: error.message }, 500);
     }
 };
 
 // Remove member from project
-const removeMember = async (req, res) => {
+export const removeMember = async (c) => {
     try {
-        const { id } = req.params;
-        const { userId } = req.body;
+        const { id } = c.req.param();
+        const { userId } = await c.req.json();
 
         const project = await prisma.project.update({
             where: { id },
@@ -251,18 +246,8 @@ const removeMember = async (req, res) => {
             });
         }
 
-        res.json(project);
+        return c.json(project);
     } catch (error) {
-        res.status(500).json({ message: 'Error removing member', error: error.message });
+        return c.json({ message: 'Error removing member', error: error.message }, 500);
     }
-};
-
-module.exports = {
-    createProject,
-    getProjects,
-    getProjectById,
-    updateProject,
-    deleteProject,
-    addMember,
-    removeMember
 };

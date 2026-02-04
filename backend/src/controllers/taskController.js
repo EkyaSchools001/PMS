@@ -1,12 +1,11 @@
-const prisma = require('../utils/prisma');
-const { ROLES } = require('../utils/policies');
-const { createNotification } = require('./notificationController');
-
+import prisma from '../utils/prisma.js';
+import { ROLES } from '../utils/policies.js';
+import { createNotification } from './notificationController.js';
 
 // Create Task
-const createTask = async (req, res) => {
+export const createTask = async (c) => {
     try {
-        const { title, description, priority, startDate, dueDate, projectId, assigneeIds } = req.body;
+        const { title, description, priority, startDate, dueDate, projectId, assigneeIds } = await c.req.json();
 
         const task = await prisma.task.create({
             data: {
@@ -39,18 +38,18 @@ const createTask = async (req, res) => {
             });
         }
 
-        res.status(201).json(task);
+        return c.json(task, 201);
     } catch (error) {
-        res.status(500).json({ message: 'Error creating task', error: error.message });
+        return c.json({ message: 'Error creating task', error: error.message }, 500);
     }
 };
 
-
 // Get Tasks for a Project
-const getProjectTasks = async (req, res) => {
+export const getProjectTasks = async (c) => {
     try {
-        const { projectId } = req.params;
-        const { role, id: userId } = req.user;
+        const { projectId } = c.req.param();
+        const user = c.get('user');
+        const { role, id: userId } = user;
 
         let whereClause = { projectId };
 
@@ -62,9 +61,8 @@ const getProjectTasks = async (req, res) => {
             };
         } else if (role === ROLES.CUSTOMER) {
             // Customer sees NO internal tasks
-            return res.json([]);
+            return c.json([]);
         }
-        // ADMIN and MANAGER see all tasks
 
         const tasks = await prisma.task.findMany({
             where: whereClause,
@@ -73,17 +71,17 @@ const getProjectTasks = async (req, res) => {
             },
             orderBy: { createdAt: 'desc' },
         });
-        res.json(tasks);
+        return c.json(tasks);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching tasks', error: error.message });
+        return c.json({ message: 'Error fetching tasks', error: error.message }, 500);
     }
 };
 
 // Update Task Title and Dates (Manager/Admin only)
-const updateTask = async (req, res) => {
+export const updateTask = async (c) => {
     try {
-        const { id } = req.params;
-        const { title, startDate, dueDate } = req.body;
+        const { id } = c.req.param();
+        const { title, startDate, dueDate } = await c.req.json();
 
         const task = await prisma.task.update({
             where: { id },
@@ -92,36 +90,36 @@ const updateTask = async (req, res) => {
                 startDate: (startDate && startDate !== "") ? new Date(startDate) : undefined,
                 dueDate: (dueDate && dueDate !== "") ? new Date(dueDate) : undefined,
             },
-
         });
 
-        res.json(task);
+        return c.json(task);
     } catch (error) {
-        res.status(500).json({ message: 'Error updating task', error: error.message });
+        return c.json({ message: 'Error updating task', error: error.message }, 500);
     }
 };
 
 // Update Task Status
-const updateTaskStatus = async (req, res) => {
+export const updateTaskStatus = async (c) => {
     try {
-        const { id } = req.params;
-        const { status } = req.body;
+        const { id } = c.req.param();
+        const { status } = await c.req.json();
 
         const task = await prisma.task.update({
             where: { id },
             data: { status },
         });
 
-        res.json(task);
+        return c.json(task);
     } catch (error) {
-        res.status(500).json({ message: 'Error updating task status', error: error.message });
+        return c.json({ message: 'Error updating task status', error: error.message }, 500);
     }
 };
 
 // Get tasks assigned to the current user
-const getMyTasks = async (req, res) => {
+export const getMyTasks = async (c) => {
     try {
-        const userId = req.user.id;
+        const user = c.get('user');
+        const userId = user.id;
 
         const tasks = await prisma.task.findMany({
             where: {
@@ -147,10 +145,8 @@ const getMyTasks = async (req, res) => {
             orderBy: { dueDate: 'asc' }
         });
 
-        res.json(tasks);
+        return c.json(tasks);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching assigned tasks', error: error.message });
+        return c.json({ message: 'Error fetching assigned tasks', error: error.message }, 500);
     }
 };
-
-module.exports = { createTask, getProjectTasks, updateTaskStatus, updateTask, getMyTasks };

@@ -1,13 +1,12 @@
-const prisma = require('../utils/prisma');
+import prisma from '../utils/prisma.js';
 
 /**
  * @desc    Get all calendar events (meetings + tasks)
- * @route   GET /api/v1/calendar/events
- * @access  Private
  */
-const getCalendarEvents = async (req, res) => {
+export const getCalendarEvents = async (c) => {
     try {
-        const { start, end, projects, users } = req.query;
+        const { start, end } = c.req.query();
+        const user = c.get('user');
 
         const dateFilter = {};
         if (start && end) {
@@ -22,8 +21,8 @@ const getCalendarEvents = async (req, res) => {
             where: {
                 status: 'SCHEDULED',
                 OR: [
-                    { organizerId: req.user.id },
-                    { participants: { some: { userId: req.user.id } } }
+                    { organizerId: user.id },
+                    { participants: { some: { userId: user.id } } }
                 ],
                 ...dateFilter
             },
@@ -50,8 +49,8 @@ const getCalendarEvents = async (req, res) => {
         const tasks = await prisma.task.findMany({
             where: {
                 OR: [
-                    { assignees: { some: { id: req.user.id } } },
-                    { project: { managerId: req.user.id } }
+                    { assignees: { some: { id: user.id } } },
+                    { project: { managerId: user.id } }
                 ],
                 ...taskDateFilter
             },
@@ -102,20 +101,20 @@ const getCalendarEvents = async (req, res) => {
             }
         }));
 
-        res.status(200).json([...formattedMeetings, ...formattedTasks]);
+        return c.json([...formattedMeetings, ...formattedTasks]);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching calendar events', error: error.message });
+        return c.json({ message: 'Error fetching calendar events', error: error.message }, 500);
     }
 };
 
 /**
  * @desc    Save a calendar view (filters/layers)
- * @route   POST /api/v1/calendar/views
- * @access  Private
  */
-const saveCalendarView = async (req, res) => {
-    const { name, type, filters, layers, isPublic } = req.body;
+export const saveCalendarView = async (c) => {
     try {
+        const { name, type, filters, layers, isPublic } = await c.req.json();
+        const user = c.get('user');
+
         const view = await prisma.calendarView.create({
             data: {
                 name,
@@ -123,16 +122,11 @@ const saveCalendarView = async (req, res) => {
                 filters: JSON.stringify(filters),
                 layers: JSON.stringify(layers),
                 isPublic,
-                userId: req.user.id
+                userId: user.id
             }
         });
-        res.status(201).json(view);
+        return c.json(view, 201);
     } catch (error) {
-        res.status(500).json({ message: 'Error saving calendar view', error: error.message });
+        return c.json({ message: 'Error saving calendar view', error: error.message }, 500);
     }
-};
-
-module.exports = {
-    getCalendarEvents,
-    saveCalendarView
 };

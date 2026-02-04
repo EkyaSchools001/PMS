@@ -1,13 +1,14 @@
-const prisma = require('../utils/prisma');
+import prisma from '../utils/prisma.js';
 
 // Create a private chat (1-on-1)
-exports.createPrivateChat = async (req, res) => {
+export const createPrivateChat = async (c) => {
     try {
-        const { targetUserId } = req.body;
-        const currentUserId = req.user.id; // Assumes auth middleware populates req.user
+        const { targetUserId } = await c.req.json();
+        const user = c.get('user');
+        const currentUserId = user.id;
 
         if (!targetUserId) {
-            return res.status(400).json({ error: 'Target user ID is required' });
+            return c.json({ error: 'Target user ID is required' }, 400);
         }
 
         // Check if chat already exists
@@ -27,7 +28,7 @@ exports.createPrivateChat = async (req, res) => {
         });
 
         if (existingChat) {
-            return res.json(existingChat);
+            return c.json(existingChat);
         }
 
         // Create new chat
@@ -48,37 +49,42 @@ exports.createPrivateChat = async (req, res) => {
             }
         });
 
-        res.status(201).json(newChat);
+        return c.json(newChat, 201);
     } catch (error) {
         console.error('Error creating private chat:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        return c.json({ error: 'Internal server error' }, 500);
     }
 };
 
-// Upload file
-exports.uploadFile = async (req, res) => {
+// Upload file (Simplified for Cloudflare - would require R2 for real storage)
+export const uploadFile = async (c) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
+        const body = await c.req.parseBody();
+        const file = body['file'];
+
+        if (!file) {
+            return c.json({ error: 'No file uploaded' }, 400);
         }
 
-        // Return the file path (relative or absolute URL depending on requirement)
-        const fileUrl = `/uploads/${req.file.filename}`;
-        res.json({ url: fileUrl, filename: req.file.originalname, mimetype: req.file.mimetype });
+        // On Cloudflare Workers, there is no disk storage.
+        // For now, we return a mock URL. Real implementation should use R2.
+        const fileUrl = `/api/v1/files/mock/${Date.now()}_${file.name}`;
+        return c.json({ url: fileUrl, filename: file.name, mimetype: file.type });
     } catch (error) {
         console.error('Error uploading file:', error);
-        res.status(500).json({ error: 'File upload failed' });
+        return c.json({ error: 'File upload failed' }, 500);
     }
 };
 
 // Send a message
-exports.sendMessage = async (req, res) => {
+export const sendMessage = async (c) => {
     try {
-        const { chatId, content, attachments } = req.body;
-        const senderId = req.user.id;
+        const { chatId, content, attachments } = await c.req.json();
+        const user = c.get('user');
+        const senderId = user.id;
 
         if (!chatId || (!content && !attachments)) {
-            return res.status(400).json({ error: 'Chat ID and content/attachments are required' });
+            return c.json({ error: 'Chat ID and content/attachments are required' }, 400);
         }
 
         // Verify user is participant
@@ -92,7 +98,7 @@ exports.sendMessage = async (req, res) => {
         });
 
         if (!isParticipant) {
-            return res.status(403).json({ error: 'You are not a participant of this chat' });
+            return c.json({ error: 'You are not a participant of this chat' }, 403);
         }
 
         const message = await prisma.message.create({
@@ -107,22 +113,22 @@ exports.sendMessage = async (req, res) => {
             },
         });
 
-        // Emit socket event
-        const io = req.app.get('io');
-        io.to(chatId).emit('receive_message', message);
+        // NOTE: Socket.io Emit skipped.
+        // Real Cloudflare implementation would use Durable Objects or External PubSub
 
-        res.status(201).json(message);
+        return c.json(message, 201);
     } catch (error) {
         console.error('Error sending message:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        return c.json({ error: 'Internal server error' }, 500);
     }
 };
 
 // Get chat history
-exports.getChatHistory = async (req, res) => {
+export const getChatHistory = async (c) => {
     try {
-        const { chatId } = req.params;
-        const userId = req.user.id;
+        const { chatId } = c.req.param();
+        const user = c.get('user');
+        const userId = user.id;
 
         // Verify access
         const isParticipant = await prisma.chatParticipant.findUnique({
@@ -135,7 +141,7 @@ exports.getChatHistory = async (req, res) => {
         });
 
         if (!isParticipant) {
-            return res.status(403).json({ error: 'Access denied' });
+            return c.json({ error: 'Access denied' }, 403);
         }
 
         const messages = await prisma.message.findMany({
@@ -146,17 +152,18 @@ exports.getChatHistory = async (req, res) => {
             },
         });
 
-        res.json(messages);
+        return c.json(messages);
     } catch (error) {
         console.error('Error fetching chat history:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        return c.json({ error: 'Internal server error' }, 500);
     }
 };
 
 // Get user's chats
-exports.getUserChats = async (req, res) => {
+export const getUserChats = async (c) => {
     try {
-        const userId = req.user.id;
+        const user = c.get('user');
+        const userId = user.id;
 
         const chats = await prisma.chat.findMany({
             where: {
@@ -178,9 +185,9 @@ exports.getUserChats = async (req, res) => {
             orderBy: { updatedAt: 'desc' },
         });
 
-        res.json(chats);
+        return c.json(chats);
     } catch (error) {
         console.error('Error fetching user chats:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        return c.json({ error: 'Internal server error' }, 500);
     }
 };

@@ -3,14 +3,14 @@
  * Defines what each role can do across the system.
  */
 
-const ROLES = {
+export const ROLES = {
     ADMIN: 'ADMIN',
     MANAGER: 'MANAGER',
     EMPLOYEE: 'EMPLOYEE',
     CUSTOMER: 'CUSTOMER',
 };
 
-const POLICIES = {
+export const POLICIES = {
     PROJECTS: {
         CREATE: [ROLES.ADMIN, ROLES.MANAGER],
         VIEW_ALL: [ROLES.ADMIN],
@@ -31,5 +31,3 @@ const POLICIES = {
         MANAGE: [ROLES.ADMIN],
     }
 };
-
-module.exports = { ROLES, POLICIES };

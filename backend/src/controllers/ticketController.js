@@ -1,14 +1,15 @@
-const prisma = require('../utils/prisma');
-const { sendTicketEmail } = require('../services/emailService');
-const { createNotification } = require('./notificationController');
+import prisma from '../utils/prisma.js';
+import { sendTicketEmail } from '../services/emailService.js';
+import { createNotification } from './notificationController.js';
 
 /**
  * @desc    Create a new ticket
  */
-const createTicket = async (req, res) => {
+export const createTicket = async (c) => {
     try {
-        let { title, description, priority, projectId, assigneeId, campus, category } = req.body;
-        const reporterId = req.user.id;
+        let { title, description, priority, projectId, assigneeId, campus, category } = await c.req.json();
+        const user = c.get('user');
+        const reporterId = user.id;
 
         // Ensure a projectId exists (for chatbot compatibility)
         if (!projectId) {
@@ -17,7 +18,7 @@ const createTicket = async (req, res) => {
         }
 
         if (!projectId) {
-            return res.status(400).json({ message: 'No project found to associate ticket with.' });
+            return c.json({ message: 'No project found to associate ticket with.' }, 400);
         }
 
         // Set SLA Deadline based on priority
@@ -62,7 +63,7 @@ const createTicket = async (req, res) => {
                 'New Ticket Raised',
                 `A new ${priority} priority ticket has been raised for ${campus} campus.`,
                 `/manager-dashboard`
-            );
+            ).catch(err => console.error('Ticket notification fail:', err));
         });
 
         // Create Audit Log
@@ -76,33 +77,32 @@ const createTicket = async (req, res) => {
             }
         });
 
-        res.status(201).json(ticket);
+        return c.json(ticket, 201);
     } catch (error) {
         console.error('Create Ticket Error:', error);
-        res.status(500).json({ message: 'Server error creating ticket' });
+        return c.json({ message: 'Server error creating ticket' }, 500);
     }
 };
 
 /**
  * @desc    Get all tickets (filtered by user role and campus)
  */
-const getTickets = async (req, res) => {
+export const getTickets = async (c) => {
     try {
-        const userId = req.user.id;
-        const userRole = req.user.role;
-        const campusAccess = req.user.campusAccess ? req.user.campusAccess.split(',') : [];
+        const user = c.get('user');
+        const userId = user.id;
+        const userRole = user.role;
+        const campusAccess = user.campusAccess ? user.campusAccess.split(',') : [];
 
         let where = {};
 
         if (userRole === 'ADMIN') {
             // See everything
         } else if (userRole === 'MANAGER') {
-            // See tickets in assigned campuses
             where = {
                 campus: { in: campusAccess }
             };
         } else {
-            // Employee/Customer see their own
             where = {
                 OR: [
                     { reporterId: userId },
@@ -125,20 +125,21 @@ const getTickets = async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
 
-        res.json(tickets);
+        return c.json(tickets);
     } catch (error) {
         console.error('Get Tickets Error:', error);
-        res.status(500).json({ message: 'Server error fetching tickets' });
+        return c.json({ message: 'Server error fetching tickets' }, 500);
     }
 };
 
 /**
  * @desc    Update ticket status, priority, or assignment
  */
-const updateTicket = async (req, res) => {
+export const updateTicket = async (c) => {
     try {
-        const { id } = req.params;
-        const { status, priority, description, assigneeId } = req.body;
+        const { id } = c.req.param();
+        const { status, priority, description, assigneeId } = await c.req.json();
+        const user = c.get('user');
 
         const ticket = await prisma.ticket.update({
             where: { id },
@@ -153,11 +154,10 @@ const updateTicket = async (req, res) => {
                 'Ticket Assigned',
                 `You have been assigned to ticket: "${ticket.title}"`,
                 `/manager-dashboard`
-            );
+            ).catch(err => console.error('Ticket assignment notify fail:', err));
         }
 
         if (status && status !== ticket.status) {
-            // Notify managers of the campus
             const managers = await prisma.user.findMany({
                 where: {
                     role: 'MANAGER',
@@ -172,7 +172,7 @@ const updateTicket = async (req, res) => {
                     'Ticket Status Updated',
                     `Ticket "${ticket.title}" status changed to ${status}`,
                     `/manager-dashboard`
-                );
+                ).catch(err => console.error('Ticket status notify fail:', err));
             });
         }
 
@@ -182,24 +182,25 @@ const updateTicket = async (req, res) => {
                 action: 'UPDATED',
                 entityType: 'TICKET',
                 entityId: id,
-                userId: req.user.id,
+                userId: user.id,
                 details: JSON.stringify({ status, priority, assigneeId })
             }
         });
 
-        res.json(ticket);
+        return c.json(ticket);
 
     } catch (error) {
         console.error('Update Ticket Error:', error);
-        res.status(500).json({ message: 'Server error updating ticket' });
+        return c.json({ message: 'Server error updating ticket' }, 500);
     }
 };
 
-const addTicketComment = async (req, res) => {
+export const addTicketComment = async (c) => {
     try {
-        const { id: ticketId } = req.params;
-        const { content } = req.body;
-        const authorId = req.user.id;
+        const { id: ticketId } = c.req.param();
+        const { content } = await c.req.json();
+        const user = c.get('user');
+        const authorId = user.id;
 
         const comment = await prisma.ticketComment.create({
             data: {
@@ -210,18 +211,17 @@ const addTicketComment = async (req, res) => {
             include: { author: { select: { fullName: true } } }
         });
 
-        res.status(201).json(comment);
+        return c.json(comment, 201);
     } catch (error) {
-        res.status(500).json({ message: 'Error adding comment' });
+        return c.json({ message: 'Error adding comment' }, 500);
     }
 };
 
-const getTicketStatus = async (req, res) => {
+export const getTicketStatus = async (c) => {
     try {
-        const { id: inputId } = req.params;
-        const user = req.user;
+        const { id: inputId } = c.req.param();
+        const user = c.get('user');
 
-        // Try direct lookup first
         let ticket = await prisma.ticket.findUnique({
             where: { id: inputId },
             include: {
@@ -230,7 +230,6 @@ const getTicketStatus = async (req, res) => {
             }
         });
 
-        // If not found, try partial match (for truncated IDs shown in UI)
         if (!ticket) {
             ticket = await prisma.ticket.findFirst({
                 where: {
@@ -244,28 +243,27 @@ const getTicketStatus = async (req, res) => {
         }
 
         if (!ticket) {
-            return res.status(404).json({ message: 'Ticket not found.' });
+            return c.json({ message: 'Ticket not found.' }, 404);
         }
 
-        // Access Control
         const isOwner = ticket.reporterId === user.id;
         const isAdmin = user.role === 'ADMIN';
         const campusAccessList = user.campusAccess ? user.campusAccess.split(',').map(c => c.trim()) : [];
         const isManager = user.role === 'MANAGER' && campusAccessList.includes(ticket.campus);
 
         if (!isOwner && !isAdmin && !isManager) {
-            return res.status(403).json({ message: 'You don’t have permission to view this ticket.' });
+            return c.json({ message: 'You don’t have permission to view this ticket.' }, 403);
         }
 
-        res.json(ticket);
+        return c.json(ticket);
     } catch (error) {
-        res.status(500).json({ message: 'Unable to fetch ticket details.' });
+        return c.json({ message: 'Unable to fetch ticket details.' }, 500);
     }
 };
 
-const getRecentTickets = async (req, res) => {
+export const getRecentTickets = async (c) => {
     try {
-        const user = req.user;
+        const user = c.get('user');
         let where = { reporterId: user.id };
 
         if (user.role === 'ADMIN') {
@@ -284,15 +282,15 @@ const getRecentTickets = async (req, res) => {
             }
         });
 
-        res.json(tickets);
+        return c.json(tickets);
     } catch (error) {
-        res.status(500).json({ message: 'Unable to fetch recent tickets.' });
+        return c.json({ message: 'Unable to fetch recent tickets.' }, 500);
     }
 };
 
-const getTicketLogs = async (req, res) => {
+export const getTicketLogs = async (c) => {
     try {
-        const { id } = req.params;
+        const { id } = c.req.param();
         const logs = await prisma.auditLog.findMany({
             where: {
                 entityType: 'TICKET',
@@ -301,21 +299,8 @@ const getTicketLogs = async (req, res) => {
             include: { user: { select: { fullName: true } } },
             orderBy: { createdAt: 'desc' }
         });
-        res.json(logs);
+        return c.json(logs);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching logs' });
+        return c.json({ message: 'Error fetching logs' }, 500);
     }
 };
-
-module.exports = {
-    createTicket,
-    getTickets,
-    updateTicket,
-    addTicketComment,
-    getTicketStatus,
-    getRecentTickets,
-    getTicketLogs,
-    checkTicketReminders: require('../utils/ticketReminders')
-};
-
-

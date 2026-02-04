@@ -1,7 +1,7 @@
-const prisma = require('./prisma');
-const { sendTicketEmail } = require('../services/emailService');
+import prisma from './prisma.js';
+import { sendTicketEmail } from '../services/emailService.js';
 
-const checkTicketReminders = async () => {
+export const checkTicketReminders = async () => {
     try {
         const openTickets = await prisma.ticket.findMany({
             where: {
@@ -32,7 +32,7 @@ const checkTicketReminders = async () => {
                     description: ticket.description,
                     projectName: ticket.project.name,
                     isReminder: true
-                });
+                }).catch(err => console.error('Ticket email fail:', err));
 
                 await prisma.ticket.update({
                     where: { id: ticket.id },
@@ -44,5 +44,3 @@ const checkTicketReminders = async () => {
         console.error('Check Reminders Error:', error);
     }
 };
-
-module.exports = { checkTicketReminders };

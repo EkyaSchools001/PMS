@@ -1,44 +1,47 @@
-const prisma = require('../utils/prisma');
+import prisma from '../utils/prisma.js';
 
-const getNotifications = async (req, res) => {
+export const getNotifications = async (c) => {
     try {
+        const user = c.get('user');
         const notifications = await prisma.notification.findMany({
-            where: { userId: req.user.id },
+            where: { userId: user.id },
             orderBy: { createdAt: 'desc' }
         });
-        res.json(notifications);
+        return c.json(notifications);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching notifications', error: error.message });
+        return c.json({ message: 'Error fetching notifications', error: error.message }, 500);
     }
 };
 
-const markAsRead = async (req, res) => {
+export const markAsRead = async (c) => {
     try {
-        const { id } = req.params;
+        const user = c.get('user');
+        const { id } = c.req.param();
         const notification = await prisma.notification.update({
-            where: { id, userId: req.user.id },
+            where: { id, userId: user.id },
             data: { isRead: true }
         });
-        res.json(notification);
+        return c.json(notification);
     } catch (error) {
-        res.status(500).json({ message: 'Error updating notification', error: error.message });
+        return c.json({ message: 'Error updating notification', error: error.message }, 500);
     }
 };
 
-const markAllAsRead = async (req, res) => {
+export const markAllAsRead = async (c) => {
     try {
+        const user = c.get('user');
         await prisma.notification.updateMany({
-            where: { userId: req.user.id, isRead: false },
+            where: { userId: user.id, isRead: false },
             data: { isRead: true }
         });
-        res.json({ message: 'All notifications marked as read' });
+        return c.json({ message: 'All notifications marked as read' });
     } catch (error) {
-        res.status(500).json({ message: 'Error updating notifications', error: error.message });
+        return c.json({ message: 'Error updating notifications', error: error.message }, 500);
     }
 };
 
 // Helper function to create notifications (can be exported for use in other controllers)
-const createNotification = async (userId, type, title, content, link = null) => {
+export const createNotification = async (userId, type, title, content, link = null) => {
     try {
         return await prisma.notification.create({
             data: {
@@ -52,11 +55,4 @@ const createNotification = async (userId, type, title, content, link = null) => 
     } catch (error) {
         console.error('Failed to create notification:', error);
     }
-};
-
-module.exports = {
-    getNotifications,
-    markAsRead,
-    markAllAsRead,
-    createNotification
 };

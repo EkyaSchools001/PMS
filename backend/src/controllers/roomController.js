@@ -1,11 +1,9 @@
-const prisma = require('../utils/prisma');
+import prisma from '../utils/prisma.js';
 
 /**
  * @desc    Get all meeting rooms
- * @route   GET /api/v1/rooms
- * @access  Private
  */
-const getRooms = async (req, res) => {
+export const getRooms = async (c) => {
     try {
         const rooms = await prisma.meetingRoom.findMany({
             include: {
@@ -13,38 +11,34 @@ const getRooms = async (req, res) => {
                 blockedSlots: true
             }
         });
-        res.status(200).json(rooms);
+        return c.json(rooms);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching rooms', error: error.message });
+        return c.json({ message: 'Error fetching rooms', error: error.message }, 500);
     }
 };
 
 /**
  * @desc    Create a meeting room
- * @route   POST /api/v1/rooms
- * @access  Private/Admin
  */
-const createRoom = async (req, res) => {
-    const { name, capacity, location } = req.body;
+export const createRoom = async (c) => {
     try {
+        const { name, capacity, location } = await c.req.json();
         const room = await prisma.meetingRoom.create({
             data: { name, capacity: parseInt(capacity), location }
         });
-        res.status(201).json(room);
+        return c.json(room, 201);
     } catch (error) {
-        res.status(500).json({ message: 'Error creating room', error: error.message });
+        return c.json({ message: 'Error creating room', error: error.message }, 500);
     }
 };
 
 /**
  * @desc    Update a meeting room
- * @route   PUT /api/v1/rooms/:id
- * @access  Private/Admin
  */
-const updateRoom = async (req, res) => {
-    const { id } = req.params;
-    const { name, capacity, location, isActive } = req.body;
+export const updateRoom = async (c) => {
     try {
+        const { id } = c.req.param();
+        const { name, capacity, location, isActive } = await c.req.json();
         const room = await prisma.meetingRoom.update({
             where: { id },
             data: {
@@ -54,21 +48,19 @@ const updateRoom = async (req, res) => {
                 isActive
             }
         });
-        res.status(200).json(room);
+        return c.json(room);
     } catch (error) {
-        res.status(500).json({ message: 'Error updating room', error: error.message });
+        return c.json({ message: 'Error updating room', error: error.message }, 500);
     }
 };
 
 /**
  * @desc    Add availability slot to room
- * @route   POST /api/v1/rooms/:id/availability
- * @access  Private/Admin
  */
-const addAvailability = async (req, res) => {
-    const { id } = req.params;
-    const { dayOfWeek, startTime, endTime } = req.body;
+export const addAvailability = async (c) => {
     try {
+        const { id } = c.req.param();
+        const { dayOfWeek, startTime, endTime } = await c.req.json();
         const slot = await prisma.roomAvailabilitySlot.create({
             data: {
                 roomId: id,
@@ -77,21 +69,19 @@ const addAvailability = async (req, res) => {
                 endTime
             }
         });
-        res.status(201).json(slot);
+        return c.json(slot, 201);
     } catch (error) {
-        res.status(500).json({ message: 'Error adding availability', error: error.message });
+        return c.json({ message: 'Error adding availability', error: error.message }, 500);
     }
 };
 
 /**
  * @desc    Block room for maintenance or event
- * @route   POST /api/v1/rooms/:id/block
- * @access  Private/Admin
  */
-const blockRoom = async (req, res) => {
-    const { id } = req.params;
-    const { startTime, endTime, reason } = req.body;
+export const blockRoom = async (c) => {
     try {
+        const { id } = c.req.param();
+        const { startTime, endTime, reason } = await c.req.json();
         const slot = await prisma.roomBlockedSlot.create({
             data: {
                 roomId: id,
@@ -100,16 +90,8 @@ const blockRoom = async (req, res) => {
                 reason
             }
         });
-        res.status(201).json(slot);
+        return c.json(slot, 201);
     } catch (error) {
-        res.status(500).json({ message: 'Error blocking room', error: error.message });
+        return c.json({ message: 'Error blocking room', error: error.message }, 500);
     }
-};
-
-module.exports = {
-    getRooms,
-    createRoom,
-    updateRoom,
-    addAvailability,
-    blockRoom
 };

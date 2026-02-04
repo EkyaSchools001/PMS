@@ -1,12 +1,18 @@
-const { google } = require('googleapis');
+import { google } from 'googleapis';
 
-const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
-);
+const getClientParams = () => ({
+    clientId: process.env.GOOGLE_CLIENT_ID || globalThis.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || globalThis.GOOGLE_CLIENT_SECRET,
+    redirectUri: process.env.GOOGLE_REDIRECT_URI || globalThis.GOOGLE_REDIRECT_URI
+});
 
-const getAuthUrl = () => {
+const createOAuth2Client = () => {
+    const { clientId, clientSecret, redirectUri } = getClientParams();
+    return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+};
+
+export const getAuthUrl = () => {
+    const oauth2Client = createOAuth2Client();
     const scopes = [
         'https://www.googleapis.com/auth/calendar',
         'https://www.googleapis.com/auth/userinfo.email',
@@ -19,17 +25,15 @@ const getAuthUrl = () => {
     });
 };
 
-const getTokens = async (code) => {
+export const getTokens = async (code) => {
+    const oauth2Client = createOAuth2Client();
     const { tokens } = await oauth2Client.getToken(code);
     return tokens;
 };
 
-const getGoogleCalendar = (accessToken, refreshToken) => {
-    const auth = new google.auth.OAuth2(
-        process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_REDIRECT_URI
-    );
+export const getGoogleCalendar = (accessToken, refreshToken) => {
+    const { clientId, clientSecret, redirectUri } = getClientParams();
+    const auth = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 
     auth.setCredentials({
         access_token: accessToken,
@@ -39,7 +43,7 @@ const getGoogleCalendar = (accessToken, refreshToken) => {
     return google.calendar({ version: 'v3', auth });
 };
 
-const createCalendarEvent = async (user, meeting) => {
+export const createCalendarEvent = async (user, meeting) => {
     if (!user.googleAccessToken || !user.googleRefreshToken) {
         return null;
     }
@@ -84,7 +88,7 @@ const createCalendarEvent = async (user, meeting) => {
     }
 };
 
-const updateCalendarEvent = async (user, googleEventId, meeting) => {
+export const updateCalendarEvent = async (user, googleEventId, meeting) => {
     if (!user.googleAccessToken || !user.googleRefreshToken || !googleEventId) {
         return null;
     }
@@ -117,7 +121,7 @@ const updateCalendarEvent = async (user, googleEventId, meeting) => {
     }
 };
 
-const deleteCalendarEvent = async (user, googleEventId) => {
+export const deleteCalendarEvent = async (user, googleEventId) => {
     if (!user.googleAccessToken || !user.googleRefreshToken || !googleEventId) {
         return null;
     }
@@ -134,12 +138,4 @@ const deleteCalendarEvent = async (user, googleEventId) => {
         console.error('Error deleting Google Calendar event:', error);
         throw error;
     }
-};
-
-module.exports = {
-    getAuthUrl,
-    getTokens,
-    createCalendarEvent,
-    updateCalendarEvent,
-    deleteCalendarEvent,
 };

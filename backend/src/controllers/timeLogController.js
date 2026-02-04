@@ -1,19 +1,20 @@
-const prisma = require('../utils/prisma');
-const { sendTimeLogEmail } = require('../services/emailService');
+import prisma from '../utils/prisma.js';
+import { sendTimeLogEmail } from '../services/emailService.js';
 
 // Create Time Log
-const createTimeLog = async (req, res) => {
+export const createTimeLog = async (c) => {
     try {
-        const { date, hours, description, projectId, taskId } = req.body;
-        const userId = req.user.id;
+        const { date, hours, description, projectId, taskId } = await c.req.json();
+        const user = c.get('user');
+        const userId = user.id;
 
         if (!date || !hours || !projectId) {
-            return res.status(400).json({ message: 'Missing required fields: date, hours, and projectId are required.' });
+            return c.json({ message: 'Missing required fields: date, hours, and projectId are required.' }, 400);
         }
 
         const numericHours = parseFloat(hours);
         if (isNaN(numericHours) || numericHours <= 0) {
-            return res.status(400).json({ message: 'Hours must be a valid positive number.' });
+            return c.json({ message: 'Hours must be a valid positive number.' }, 400);
         }
 
         const timeLog = await prisma.timeLog.create({
@@ -32,13 +33,12 @@ const createTimeLog = async (req, res) => {
             }
         });
 
-        // Notify all users via email (as requested by user)
-        // Warning: This could be spammy, but following user request
+        // Notify all users via email
         const allUsers = await prisma.user.findMany({ select: { email: true } });
         const emails = allUsers.map(u => u.email).filter(e => e);
 
         if (emails.length > 0) {
-            await sendTimeLogEmail(
+            sendTimeLogEmail(
                 emails,
                 'New Time Entry Logged',
                 {
@@ -49,18 +49,18 @@ const createTimeLog = async (req, res) => {
                     date: timeLog.date,
                     description: timeLog.description
                 }
-            );
+            ).catch(err => console.error('Time log email fail:', err));
         }
 
-        res.status(201).json(timeLog);
+        return c.json(timeLog, 201);
     } catch (error) {
         console.error('Error creating time log:', error);
-        res.status(500).json({ message: 'Error logging hours', error: error.message });
+        return c.json({ message: 'Error logging hours', error: error.message }, 500);
     }
 };
 
-// Get Time Logs (Visible to all users as requested)
-const getTimeLogs = async (req, res) => {
+// Get Time Logs
+export const getTimeLogs = async (c) => {
     try {
         const logs = await prisma.timeLog.findMany({
             include: {
@@ -70,22 +70,20 @@ const getTimeLogs = async (req, res) => {
             },
             orderBy: { date: 'desc' }
         });
-        res.json(logs);
+        return c.json(logs);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching time logs', error: error.message });
+        return c.json({ message: 'Error fetching time logs', error: error.message }, 500);
     }
 };
 
 // Get Dashboard Stats for Time Logs
-const getTimeStats = async (req, res) => {
+export const getTimeStats = async (c) => {
     try {
         const totalHours = await prisma.timeLog.aggregate({
             _sum: { hours: true }
         });
-        res.json({ totalHours: totalHours._sum.hours || 0 });
+        return c.json({ totalHours: totalHours._sum.hours || 0 });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching time stats', error: error.message });
+        return c.json({ message: 'Error fetching time stats', error: error.message }, 500);
     }
 };
-
-module.exports = { createTimeLog, getTimeLogs, getTimeStats };
