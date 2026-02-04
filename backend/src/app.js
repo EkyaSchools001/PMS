@@ -35,8 +35,10 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 
-// Serve uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve uploads (Disabled on Cloudflare Workers - use R2/KV for production)
+if (!process.env.CF_PAGES) {
+    app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+}
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
@@ -66,7 +68,14 @@ app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ message: 'API route not found' });
     }
-    // Otherwise, serve the frontend's index.html
+
+    // On Cloudflare Workers, we don't serve the frontend - Cloudflare Pages handles it.
+    // We return a simple status check instead of failing on res.sendFile
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(404).json({ message: 'Resource not found at API level' });
+    }
+
+    // Otherwise, serve the frontend's index.html (Local only)
     res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
