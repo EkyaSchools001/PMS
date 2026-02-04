@@ -1,4 +1,4 @@
-import { google } from 'googleapis';
+import { OAuth2Client } from 'google-auth-library';
 
 const getClientParams = () => ({
     clientId: process.env.GOOGLE_CLIENT_ID || globalThis.GOOGLE_CLIENT_ID,
@@ -8,7 +8,7 @@ const getClientParams = () => ({
 
 const createOAuth2Client = () => {
     const { clientId, clientSecret, redirectUri } = getClientParams();
-    return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+    return new OAuth2Client(clientId, clientSecret, redirectUri);
 };
 
 export const getAuthUrl = () => {
@@ -31,24 +31,32 @@ export const getTokens = async (code) => {
     return tokens;
 };
 
-export const getGoogleCalendar = (accessToken, refreshToken) => {
-    const { clientId, clientSecret, redirectUri } = getClientParams();
-    const auth = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+const callCalendarApi = async (accessToken, endpoint, method = 'GET', body = null) => {
+    const url = `https://www.googleapis.com/calendar/v3${endpoint}`;
+    const options = {
+        method,
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+    };
 
-    auth.setCredentials({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-    });
+    if (body) {
+        options.body = JSON.stringify(body);
+    }
 
-    return google.calendar({ version: 'v3', auth });
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Google Calendar API error: ${JSON.stringify(errorData)}`);
+    }
+
+    if (method === 'DELETE') return true;
+    return await response.json();
 };
 
 export const createCalendarEvent = async (user, meeting) => {
-    if (!user.googleAccessToken || !user.googleRefreshToken) {
-        return null;
-    }
-
-    const calendar = getGoogleCalendar(user.googleAccessToken, user.googleRefreshToken);
+    if (!user.googleAccessToken) return null;
 
     const event = {
         summary: meeting.title,
@@ -61,27 +69,14 @@ export const createCalendarEvent = async (user, meeting) => {
             dateTime: new Date(meeting.endTime).toISOString(),
             timeZone: 'UTC',
         },
-        reminders: {
-            useDefault: false,
-            overrides: [
-                { method: 'email', minutes: 24 * 60 },
-                { method: 'popup', minutes: 10 },
-            ],
-        },
     };
 
     if (meeting.isOnline && meeting.meetingLink) {
         event.location = meeting.meetingLink;
-    } else if (meeting.room) {
-        event.location = meeting.room.name || meeting.room.location;
     }
 
     try {
-        const response = await calendar.events.insert({
-            calendarId: 'primary',
-            resource: event,
-        });
-        return response.data;
+        return await callCalendarApi(user.googleAccessToken, '/calendars/primary/events', 'POST', event);
     } catch (error) {
         console.error('Error creating Google Calendar event:', error);
         throw error;
@@ -89,11 +84,7 @@ export const createCalendarEvent = async (user, meeting) => {
 };
 
 export const updateCalendarEvent = async (user, googleEventId, meeting) => {
-    if (!user.googleAccessToken || !user.googleRefreshToken || !googleEventId) {
-        return null;
-    }
-
-    const calendar = getGoogleCalendar(user.googleAccessToken, user.googleRefreshToken);
+    if (!user.googleAccessToken || !googleEventId) return null;
 
     const event = {
         summary: meeting.title,
@@ -109,12 +100,7 @@ export const updateCalendarEvent = async (user, googleEventId, meeting) => {
     };
 
     try {
-        const response = await calendar.events.patch({
-            calendarId: 'primary',
-            eventId: googleEventId,
-            resource: event,
-        });
-        return response.data;
+        return await callCalendarApi(user.googleAccessToken, `/calendars/primary/events/${googleEventId}`, 'PATCH', event);
     } catch (error) {
         console.error('Error updating Google Calendar event:', error);
         throw error;
@@ -122,18 +108,10 @@ export const updateCalendarEvent = async (user, googleEventId, meeting) => {
 };
 
 export const deleteCalendarEvent = async (user, googleEventId) => {
-    if (!user.googleAccessToken || !user.googleRefreshToken || !googleEventId) {
-        return null;
-    }
-
-    const calendar = getGoogleCalendar(user.googleAccessToken, user.googleRefreshToken);
+    if (!user.googleAccessToken || !googleEventId) return null;
 
     try {
-        await calendar.events.delete({
-            calendarId: 'primary',
-            eventId: googleEventId,
-        });
-        return true;
+        return await callCalendarApi(user.googleAccessToken, `/calendars/primary/events/${googleEventId}`, 'DELETE');
     } catch (error) {
         console.error('Error deleting Google Calendar event:', error);
         throw error;
