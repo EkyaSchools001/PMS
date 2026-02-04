@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260203.0",
-    "@prisma/adapter-d1": "^7.3.0",
+    "@prisma/adapter-d1": "6.2.1",
     "nodemon": "^3.1.9"
   },
   "prisma": {
