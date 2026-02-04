@@ -1,15 +1,20 @@
 const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./src/app');
-const { PrismaClient } = require('@prisma/client');
+const { getPrisma } = require('./src/db/prisma-d1');
 
-const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
+let prisma;
 
-async function main() {
+async function main(d1Binding) {
     try {
-        await prisma.$connect();
-        console.log('✅ Connected to Database');
+        prisma = getPrisma(d1Binding);
+        if (!d1Binding) {
+            await prisma.$connect();
+            console.log('✅ Connected to Local Database');
+        } else {
+            console.log('✅ Using Cloudflare D1 Database');
+        }
 
         const server = http.createServer(app);
 
@@ -80,4 +85,22 @@ async function main() {
     }
 }
 
-main();
+// Export for Cloudflare Workers
+module.exports = {
+    async fetch(request, env, ctx) {
+        if (!prisma) {
+            await main(env.DB);
+        }
+        // Store env in app for access in routes/controllers
+        app.set('env', env);
+
+        // Use a simple fetch handler for Express on Workers (requires nodejs_compat)
+        // Note: For full Express support on Workers, consider using @codegen-ie/serverless-express or similar
+        return app.fetch(request, env, ctx);
+    }
+};
+
+// Also support direct node execution
+if (require.main === module) {
+    main();
+}
