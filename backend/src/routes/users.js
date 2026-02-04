@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../utils/prisma');
 
+const { authenticate, authorize } = require('../middlewares/authMiddleware');
+const { hashPassword } = require('../utils/password');
+
 router.use(authenticate);
 
 // Create new user (Admin only)
