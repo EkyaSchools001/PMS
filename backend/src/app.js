@@ -1,4 +1,9 @@
 const express = require('express');
+
+// Fix for iconv-lite on Cloudflare Workers
+const iconv = require('iconv-lite');
+iconv.enableStreamingAPI = false;
+
 const cors = require('cors');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/authRoutes');
