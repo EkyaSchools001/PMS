@@ -1,5 +1,5 @@
-import app from '../../backend/src/hono-app.js';
-import { getPrisma } from '../../backend/src/db/prisma-d1.js';
+import app from '../backend/src/hono-app.js';
+import { getPrisma } from '../backend/src/db/prisma-d1.js';
 
 export async function onRequest(context) {
     try {
