@@ -37,3 +37,13 @@ Thumbs.db
 backend/error.log
 backend/uploads/
 !backend/uploads/.gitkeep
+
+# SQLite databases (local development)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Wrangler
+.wrangler/
+.dev.vars
