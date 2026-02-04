@@ -13,7 +13,7 @@ export default {
                 const { default: app } = await import('./src/app.js');
                 const { getPrisma } = await import('./src/db/prisma-d1.js');
 
-                prisma = getPrisma(env.DB);
+                globalThis.prisma = getPrisma(env.DB);
                 cachedApp = app;
                 cachedServer = createServer(cachedApp);
             }
