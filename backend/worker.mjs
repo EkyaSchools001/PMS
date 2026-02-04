@@ -1,9 +1,7 @@
 import { createServer } from 'node:http';
 import { handleAsNodeRequest } from 'cloudflare:node';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const app = require('./src/app');
-const { getPrisma } = require('./src/db/prisma-d1');
+import app from './src/app.js';
+import { getPrisma } from './src/db/prisma-d1.js';
 
 let prisma;
 const server = createServer(app);
