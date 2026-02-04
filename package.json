@@ -6,6 +6,7 @@
   "scripts": {
     "start": "npm start --prefix backend",
     "build": "npm ci --prefix frontend --no-audit --no-fund && npm run build --prefix frontend && npm ci --prefix backend --no-audit --no-fund && npm run generate --prefix backend",
+    "deploy": "npx wrangler pages deploy frontend/dist --project-name=pms",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
