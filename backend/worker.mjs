@@ -1,11 +1,12 @@
+import { createServer } from 'node:http';
+import { handleAsNodeRequest } from 'cloudflare:node';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const app = require('./src/app');
 const { getPrisma } = require('./src/db/prisma-d1');
-import serverlessExpress from '@codegen-ie/serverless-express';
 
 let prisma;
-let serverlessHandler;
+const server = createServer(app);
 
 export default {
     async fetch(request, env, ctx) {
@@ -15,10 +16,7 @@ export default {
         // Store env in app for access in routes/controllers
         app.set('env', env);
 
-        if (!serverlessHandler) {
-            serverlessHandler = serverlessExpress({ app });
-        }
-
-        return serverlessHandler.fetch(request, env, ctx);
+        // Use Cloudflare's native Node.js request handler
+        return handleAsNodeRequest(server, request, env, ctx);
     }
 };
