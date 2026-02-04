@@ -27,7 +27,8 @@
     "nodemailer": "^7.0.13",
     "prisma": "6.2.1",
     "socket.io": "^4.8.3",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "@codegen-ie/serverless-express": "^0.13.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260203.0",
