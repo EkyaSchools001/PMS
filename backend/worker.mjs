@@ -1,12 +1,7 @@
 import { handleAsNodeRequest } from 'cloudflare:node';
 import { createServer } from 'node:http';
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
-
-// Pre-load common dependencies to speed up subsequent loads
-const app = require('./src/app.js');
-const { getPrisma } = require('./src/db/prisma-d1.js');
+import app from './src/app.js';
+import { getPrisma } from './src/db/prisma-d1.js';
 
 // Pre-initialize the server at the top level
 // This ensures that the server is "ready" with a port metadata BEFORE the first request
