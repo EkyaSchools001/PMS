@@ -1,3 +1,6 @@
+import { handleAsNodeRequest } from 'cloudflare:node';
+import { createServer } from 'node:http';
+
 let cachedApp;
 let cachedServer;
 let listeningPromise;
@@ -5,22 +8,21 @@ let listeningPromise;
 export default {
     async fetch(request, env, ctx) {
         try {
-            // Lazy load the bridge and app to bypass startup memory limits
             if (!cachedApp) {
-                const [{ handleAsNodeRequest }, { createServer }, { default: app }, { getPrisma }] = await Promise.all([
-                    import('cloudflare:node'),
-                    import('node:http'),
+                // Import application logic
+                const [{ default: app }, { getPrisma }] = await Promise.all([
                     import('./src/app.js'),
                     import('./src/db/prisma-d1.js')
                 ]);
 
-                // Initialize database adapter
+                // Initialize database
                 globalThis.prisma = getPrisma(env.DB);
 
                 cachedApp = app;
+                // Use the statically imported createServer to avoid unenv polyfills
                 cachedServer = createServer(cachedApp);
 
-                // Ensure the server is "listening" so handleAsNodeRequest can find a port
+                // Ensure the server is "listening" or ready for the bridge
                 listeningPromise = new Promise((resolve) => {
                     cachedServer.listen(0, resolve);
                 });
@@ -29,13 +31,11 @@ export default {
             // Always wait for the server to be ready before processing the request
             await listeningPromise;
 
-            const { handleAsNodeRequest } = await import('cloudflare:node');
-
             // Store env in app for access in routes/controllers
             cachedApp.set('env', env);
             process.env.PORT = '8787';
 
-            // Use Cloudflare's native Node.js request handler
+            // Pass the listening server to the bridge
             return await handleAsNodeRequest(cachedServer, request, env, ctx);
         } catch (error) {
             console.error('Worker Error:', error);
