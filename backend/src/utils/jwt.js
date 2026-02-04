@@ -1,17 +1,17 @@
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
-const generateToken = (userId, role) => {
-    if (!process.env.JWT_SECRET) {
+export const generateToken = (userId, role) => {
+    const secret = process.env.JWT_SECRET || globalThis.JWT_SECRET;
+    if (!secret) {
         console.error('❌ CRITICAL: JWT_SECRET is not defined!');
         throw new Error('JWT_SECRET is missing');
     }
-    return jwt.sign({ userId, role }, process.env.JWT_SECRET, {
+    return jwt.sign({ userId, role }, secret, {
         expiresIn: '7d',
     });
 };
 
-const verifyToken = (token) => {
-    return jwt.verify(token, process.env.JWT_SECRET);
+export const verifyToken = (token) => {
+    const secret = process.env.JWT_SECRET || globalThis.JWT_SECRET;
+    return jwt.verify(token, secret);
 };
-
-module.exports = { generateToken, verifyToken };

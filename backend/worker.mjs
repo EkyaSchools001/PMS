@@ -1,35 +1,23 @@
-import { handleAsNodeRequest } from 'cloudflare:node';
-
-let cachedApp;
+import app from './src/hono-app.js';
+import { getPrisma } from './src/db/prisma-d1.js';
 
 export default {
     async fetch(request, env, ctx) {
         try {
-            if (!cachedApp) {
-                // Lazy load the application logic to bypass startup memory limits
-                // We use dynamic import for the CJS modules
-                const [{ default: app }, { getPrisma }] = await Promise.all([
-                    import('./src/app.js'),
-                    import('./src/db/prisma-d1.js')
-                ]);
+            // Initialize Prisma with the D1 binding per request
+            // This is required for Cloudflare D1 to work with Prisma
+            globalThis.prisma = getPrisma(env.DB);
 
-                // Initialize database adapter
-                globalThis.prisma = getPrisma(env.DB);
-                cachedApp = app;
-            }
+            // Set environment variables for the Hono context if needed
+            // Hono handles env via c.env, but some utilities might use process.env
+            // We sync them here for compatibility
+            if (env.JWT_SECRET) globalThis.JWT_SECRET = env.JWT_SECRET;
 
-            // Store env in app for access in routes/controllers
-            cachedApp.set('env', env);
-            process.env.PORT = '8787';
-
-            // Pass the Express app function directly to handleAsNodeRequest
-            // This avoids calling http.createServer in the worker and bypasses unenv conflicts
-            return await handleAsNodeRequest(cachedApp, request, env, ctx);
+            return app.fetch(request, env, ctx);
         } catch (error) {
             console.error('Worker Error:', error);
-            const status = error.message.includes('port') ? 503 : 500;
             return new Response(`Worker Error: ${error.message}\nStack: ${error.stack}`, {
-                status,
+                status: 500,
                 headers: { 'Content-Type': 'text/plain' }
             });
         }
