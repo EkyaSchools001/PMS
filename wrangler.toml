@@ -1,8 +1,8 @@
 name = "pms"
-main = "backend/worker.mjs"
+main = "backend/worker.js"
 compatibility_date = "2025-02-04"
 compatibility_flags = [ "nodejs_compat", "enable_nodejs_http_server_modules" ]
-minify = true
+minify = false
 
 # D1 Database Binding
 [[d1_databases]]
