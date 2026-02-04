@@ -1,3 +1,4 @@
+// Deployment trigger: 2026-02-04T13:22:00
 const { handleAsNodeRequest } = require('cloudflare:node');
 
 let cachedApp;
