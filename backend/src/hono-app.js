@@ -14,11 +14,32 @@ import { timeLogRoutes } from './routes/hono/timeLogRoutes.js';
 import { calendarRoutes } from './routes/hono/calendarRoutes.js';
 import { calendarAuthRoutes } from './routes/hono/calendarAuthRoutes.js';
 
-const app = new Hono().basePath('/api/v1');
+const app = new Hono();
+
+// Root health check
+app.get('/', (c) => {
+    return c.json({
+        status: 'ok',
+        message: 'PMS API is running on Cloudflare Workers',
+        version: '2.0.0',
+        endpoints: {
+            api: '/api/v1',
+            health: '/health'
+        },
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get('/health', (c) => {
+    return c.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// API routes with /api/v1 prefix
+const apiApp = new Hono();
 
 // Middleware
-app.use('*', logger());
-app.use('*', cors({
+apiApp.use('*', logger());
+apiApp.use('*', cors({
     origin: '*', // Adjust for production
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowHeaders: ['Content-Type', 'Authorization'],
@@ -28,18 +49,21 @@ app.use('*', cors({
 }));
 
 // Routes
-app.route('/auth', authRoutes);
-app.route('/projects', projectRoutes);
-app.route('/tasks', taskRoutes);
-app.route('/users', userRoutes);
-app.route('/chats', chatRoutes);
-app.route('/notifications', notificationRoutes);
-app.route('/meetings', meetingRoutes);
-app.route('/rooms', roomRoutes);
-app.route('/tickets', ticketRoutes);
-app.route('/timelogs', timeLogRoutes);
-app.route('/calendar', calendarRoutes);
-app.route('/calendar/auth', calendarAuthRoutes);
+apiApp.route('/auth', authRoutes);
+apiApp.route('/projects', projectRoutes);
+apiApp.route('/tasks', taskRoutes);
+apiApp.route('/users', userRoutes);
+apiApp.route('/chats', chatRoutes);
+apiApp.route('/notifications', notificationRoutes);
+apiApp.route('/meetings', meetingRoutes);
+apiApp.route('/rooms', roomRoutes);
+apiApp.route('/tickets', ticketRoutes);
+apiApp.route('/timelogs', timeLogRoutes);
+apiApp.route('/calendar', calendarRoutes);
+apiApp.route('/calendar/auth', calendarAuthRoutes);
+
+// Mount API routes
+app.route('/api/v1', apiApp);
 
 // Error handling
 app.onError((err, c) => {
