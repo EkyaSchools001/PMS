@@ -6,7 +6,8 @@
   "scripts": {
     "start": "npx prisma db push && npx prisma db seed && node server.js",
     "dev": "nodemon server.js",
-    "generate": "node node_modules/prisma/build/index.js generate",
+    "generate": "prisma generate",
+    "postinstall": "chmod +x node_modules/.bin/prisma || true",
     "deploy:d1": "wrangler d1 execute ekya --remote --file=./prisma/migration.sql",
     "migration:generate": "npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migration.sql",
     "test": "echo \"Error: no test specified\" && exit 1"
