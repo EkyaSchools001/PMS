@@ -1,16 +1,17 @@
 name = "pms"
-main = "backend/worker.mjs"
 compatibility_date = "2025-02-04"
 compatibility_flags = [ "nodejs_compat", "enable_nodejs_http_server_modules" ]
-minify = true
+
+# Pages configuration
+pages_build_output_dir = "frontend/dist"
 
 # D1 Database Binding
 [[d1_databases]]
 binding = "DB"
 database_name = "ekya"
-database_id = "cbe7f0c6-f325-4629-a4ae-17f209f15982"  # Replace with your actual full UUID from Cloudflare dashboard
+database_id = "cbe7f0c6-f325-4629-a4ae-17f209f15982"
 
-# Environment Variables (set these in Cloudflare dashboard or via wrangler secret)
+# Environment Variables
 [vars]
 NODE_ENV = "production"
 PORT = "8787"
