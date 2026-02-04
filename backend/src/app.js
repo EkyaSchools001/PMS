@@ -37,7 +37,7 @@ app.use(express.json());
 
 
 // Serve uploads (Disabled on Cloudflare Workers - use R2/KV for production)
-if (!process.env.CF_PAGES) {
+if (!process.env.CF_PAGES && typeof __dirname !== 'undefined') {
     app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 }
 
@@ -59,7 +59,9 @@ app.use('/api/v1/auth', calendarAuthRoutes); // Adding under auth for convenienc
 
 
 // Serve static files from the React app
-const frontendPath = path.join(__dirname, '../../frontend/dist');
+const frontendPath = typeof __dirname !== 'undefined'
+    ? path.join(__dirname, '../../frontend/dist')
+    : path.join(process.cwd(), 'frontend/dist');
 app.use(express.static(frontendPath));
 
 // The "catch-all" handler: for any request that doesn't
