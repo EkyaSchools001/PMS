@@ -1,8 +1,6 @@
 let cachedApp;
 let cachedServer;
-let prisma;
-
-
+let listeningPromise;
 
 export default {
     async fetch(request, env, ctx) {
@@ -18,8 +16,17 @@ export default {
                 cachedServer = createServer(cachedApp);
 
                 // Ensure the server is "listening" so handleAsNodeRequest can find a port
-                cachedServer.listen(0);
+                listeningPromise = new Promise((resolve, reject) => {
+                    try {
+                        cachedServer.listen(0, resolve);
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
             }
+
+            // Always wait for the server to be ready before processing the request
+            await listeningPromise;
 
             const { handleAsNodeRequest } = await import('cloudflare:node');
 
