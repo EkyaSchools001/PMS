@@ -1,32 +1,16 @@
 let cachedApp;
-let cachedServer;
-let listeningPromise;
 
 export default {
     async fetch(request, env, ctx) {
         try {
             if (!cachedApp) {
                 // Lazy load everything to avoid startup memory limits
-                const { createServer } = await import('node:http');
                 const { default: app } = await import('./src/app.js');
                 const { getPrisma } = await import('./src/db/prisma-d1.js');
 
                 globalThis.prisma = getPrisma(env.DB);
                 cachedApp = app;
-                cachedServer = createServer(cachedApp);
-
-                // Ensure the server is "listening" so handleAsNodeRequest can find a port
-                listeningPromise = new Promise((resolve, reject) => {
-                    try {
-                        cachedServer.listen(0, resolve);
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
             }
-
-            // Always wait for the server to be ready before processing the request
-            await listeningPromise;
 
             const { handleAsNodeRequest } = await import('cloudflare:node');
 
@@ -34,7 +18,8 @@ export default {
             cachedApp.set('env', env);
 
             // Use Cloudflare's native Node.js request handler
-            return await handleAsNodeRequest(cachedServer, request, env, ctx);
+            // Passing the 'app' directly is the standard way for Express on Workers
+            return await handleAsNodeRequest(cachedApp, request, env, ctx);
         } catch (error) {
             console.error('Worker Error:', error);
             return new Response(`Worker Error: ${error.message}\nStack: ${error.stack}`, {
