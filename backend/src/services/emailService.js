@@ -1,13 +1,21 @@
 import nodemailer from 'nodemailer';
 
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || globalThis.SMTP_HOST || 'smtp.mailtrap.io',
-    port: process.env.SMTP_PORT || globalThis.SMTP_PORT || 2525,
-    auth: {
-        user: process.env.SMTP_USER || globalThis.SMTP_USER,
-        pass: process.env.SMTP_PASS || globalThis.SMTP_PASS
+// Lazy-load transporter to avoid global scope violations in Cloudflare Workers
+let transporter = null;
+
+const getTransporter = () => {
+    if (!transporter) {
+        transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST || globalThis.SMTP_HOST || 'smtp.mailtrap.io',
+            port: process.env.SMTP_PORT || globalThis.SMTP_PORT || 2525,
+            auth: {
+                user: process.env.SMTP_USER || globalThis.SMTP_USER,
+                pass: process.env.SMTP_PASS || globalThis.SMTP_PASS
+            }
+        });
     }
-});
+    return transporter;
+};
 
 /**
  * @desc    Send meeting invitation/update email
@@ -34,7 +42,7 @@ export const sendMeetingEmail = async (to, subject, meetingDetails) => {
     `;
 
     try {
-        await transporter.sendMail({
+        await getTransporter().sendMail({
             from: '"PMS Calendar" <calendar@pms.com>',
             to,
             subject: `${subject}: ${title}`,
@@ -74,7 +82,7 @@ export const sendTicketEmail = async (to, subject, ticketDetails) => {
     `;
 
     try {
-        await transporter.sendMail({
+        await getTransporter().sendMail({
             from: '"PMS Ticketing" <ticketing@pms.com>',
             to,
             subject: `${isReminder ? 'REMINDER: ' : ''}${title} [${priority}]`,
@@ -113,7 +121,7 @@ export const sendTimeLogEmail = async (to, subject, logDetails) => {
     `;
 
     try {
-        await transporter.sendMail({
+        await getTransporter().sendMail({
             from: '"PMS Time Tracker" <time@pms.com>',
             to,
             subject: `Time Logged: ${hours}h by ${userName}`,
