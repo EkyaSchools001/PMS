@@ -1,4 +1,4 @@
-name = "project"
+name = "pp"
 compatibility_date = "2025-02-04"
 compatibility_flags = [ "nodejs_compat", "enable_nodejs_http_server_modules" ]
 
@@ -8,7 +8,7 @@ pages_build_output_dir = "frontend/dist"
 # D1 Database Binding
 [[d1_databases]]
 binding = "DB"
-database_name = "ekya"
+database_name = "pp"
 database_id = "cbe7f0c6-f325-4629-a4ae-17f209f15982"
 
 # Environment Variables

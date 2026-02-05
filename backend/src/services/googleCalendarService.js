@@ -1,34 +1,53 @@
-import { OAuth2Client } from 'google-auth-library';
-
 const getClientParams = () => ({
     clientId: process.env.GOOGLE_CLIENT_ID || globalThis.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || globalThis.GOOGLE_CLIENT_SECRET,
     redirectUri: process.env.GOOGLE_REDIRECT_URI || globalThis.GOOGLE_REDIRECT_URI
 });
 
-const createOAuth2Client = () => {
-    const { clientId, clientSecret, redirectUri } = getClientParams();
-    return new OAuth2Client(clientId, clientSecret, redirectUri);
-};
-
 export const getAuthUrl = () => {
-    const oauth2Client = createOAuth2Client();
+    const { clientId, redirectUri } = getClientParams();
     const scopes = [
         'https://www.googleapis.com/auth/calendar',
         'https://www.googleapis.com/auth/userinfo.email',
-    ];
+    ].join(' '); // Space separated scopes
 
-    return oauth2Client.generateAuthUrl({
-        access_type: 'offline',
+    const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: 'code',
         scope: scopes,
-        prompt: 'consent',
+        access_type: 'offline',
+        prompt: 'consent'
     });
+
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 };
 
 export const getTokens = async (code) => {
-    const oauth2Client = createOAuth2Client();
-    const { tokens } = await oauth2Client.getToken(code);
-    return tokens;
+    const { clientId, clientSecret, redirectUri } = getClientParams();
+
+    const params = new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code'
+    });
+
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params.toString()
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`Failed to get tokens: ${JSON.stringify(error)}`);
+    }
+
+    return await response.json();
 };
 
 const callCalendarApi = async (accessToken, endpoint, method = 'GET', body = null) => {

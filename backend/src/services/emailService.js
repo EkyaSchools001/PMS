@@ -1,20 +1,23 @@
-import nodemailer from 'nodemailer';
+// import nodemailer from 'nodemailer'; // Removed to reduce bundle size for Cloudflare Pages Functions
 
-// Lazy-load transporter to avoid global scope violations in Cloudflare Workers
-let transporter = null;
+/**
+ * MOCK EMAIL SERVICE
+ * 
+ * Cloudflare Pages Functions (Workers) do not support SMTP directly.
+ * To send real emails, you must use an HTTP-based service like Resend, SendGrid, or MailChannels.
+ * 
+ * For now, this service simply logs the email content to the console.
+ */
 
-const getTransporter = () => {
-    if (!transporter) {
-        transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || globalThis.SMTP_HOST || 'smtp.mailtrap.io',
-            port: process.env.SMTP_PORT || globalThis.SMTP_PORT || 2525,
-            auth: {
-                user: process.env.SMTP_USER || globalThis.SMTP_USER,
-                pass: process.env.SMTP_PASS || globalThis.SMTP_PASS
-            }
-        });
-    }
-    return transporter;
+const logEmail = (to, subject, html) => {
+    console.log(`
+    === [MOCK EMAIL SENT] ===
+    TO: ${to}
+    SUBJECT: ${subject}
+    -------------------------
+    ${html.replace(/<[^>]*>?/gm, '').substring(0, 200)}... (truncated HTML)
+    =========================
+    `);
 };
 
 /**
@@ -42,13 +45,10 @@ export const sendMeetingEmail = async (to, subject, meetingDetails) => {
     `;
 
     try {
-        await getTransporter().sendMail({
-            from: '"PMS Calendar" <calendar@pms.com>',
-            to,
-            subject: `${subject}: ${title}`,
-            html
-        });
-        console.log(`Email sent to ${to}`);
+        // MOCK SEND
+        logEmail(to, `${subject}: ${title}`, html);
+        // await getTransporter().sendMail({...})
+        console.log(`Email sent to ${to} (MOCK)`);
     } catch (error) {
         console.error('Failed to send email:', error);
     }
@@ -82,13 +82,9 @@ export const sendTicketEmail = async (to, subject, ticketDetails) => {
     `;
 
     try {
-        await getTransporter().sendMail({
-            from: '"PMS Ticketing" <ticketing@pms.com>',
-            to,
-            subject: `${isReminder ? 'REMINDER: ' : ''}${title} [${priority}]`,
-            html
-        });
-        console.log(`Ticket email sent to ${to}`);
+        // MOCK SEND
+        logEmail(to, `${isReminder ? 'REMINDER: ' : ''}${title} [${priority}]`, html);
+        console.log(`Ticket email sent to ${to} (MOCK)`);
     } catch (error) {
         console.error('Failed to send ticket email:', error);
     }
@@ -121,13 +117,9 @@ export const sendTimeLogEmail = async (to, subject, logDetails) => {
     `;
 
     try {
-        await getTransporter().sendMail({
-            from: '"PMS Time Tracker" <time@pms.com>',
-            to,
-            subject: `Time Logged: ${hours}h by ${userName}`,
-            html
-        });
-        console.log(`Time log email sent to ${to}`);
+        // MOCK SEND
+        logEmail(to, `Time Logged: ${hours}h by ${userName}`, html);
+        console.log(`Time log email sent to ${to} (MOCK)`);
     } catch (error) {
         console.error('Failed to send time log email:', error);
     }
